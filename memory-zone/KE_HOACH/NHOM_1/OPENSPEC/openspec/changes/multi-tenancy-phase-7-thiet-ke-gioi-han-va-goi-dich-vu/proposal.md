@@ -22,7 +22,7 @@
 ## Capabilities
 
 ### New Capabilities
-- `thi-t-k-gi-i-h-n-v-g-i-d-ch-v-gi-nguy-n`: 2 gói Free/VIP, giới hạn SKU, đơn/tháng, user.
+- `thiet-ke-gioi-han-va-goi-dich-vu`: 2 gói Free/VIP, giới hạn SKU, đơn/tháng, user.
 
 ### Modified Capabilities
 - None outside this sub-phase.

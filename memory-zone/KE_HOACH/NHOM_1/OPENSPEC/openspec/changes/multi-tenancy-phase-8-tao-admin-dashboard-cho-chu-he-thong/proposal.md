@@ -23,7 +23,7 @@ Trang `admin.vietsalepro.com` để tạo/sửa/suspend cửa hàng.
 ## Capabilities
 
 ### New Capabilities
-- `t-o-admin-dashboard-cho-ch-h-th-ng-gi-nguy-n`: Trang `admin.vietsalepro.com` để tạo/sửa/suspend cửa hàng.
+- `tao-admin-dashboard-cho-chu-he-thong`: Trang `admin.vietsalepro.com` để tạo/sửa/suspend cửa hàng.
 
 ### Modified Capabilities
 - None outside this sub-phase.

@@ -113,8 +113,8 @@ Mỗi chat chỉ làm **một sub-phase** (một OpenSpec change). Không gộp 
 | 6.2 | Service layer inject | `multi-tenancy-phase-6-2-custom-fetch-wrapper-service-layer-inject` | Inject tenant_id vào supabaseService.ts |
 | 6.3 | App.tsx + global loading | `multi-tenancy-phase-6-3-app-tsx-global-data-loading` | Bọc TenantProvider, update dependencies |
 | 6.4 | Page-level loading | `multi-tenancy-phase-6-4-page-level-data-loading` | Sửa các page chính, hook useTenant |
-| 7 | Subscription limits | `multi-tenancy-phase-7-thi-t-k-gi-i-h-n-v-g-i-d-ch-v-gi-nguy-n` | Trigger Free/VIP limits |
-| 8 | Admin dashboard | `multi-tenancy-phase-8-t-o-admin-dashboard-cho-ch-h-th-ng-gi-nguy-n` | SystemAdminDashboard + RPC |
+| 7 | Subscription limits | `multi-tenancy-phase-7-thiet-ke-gioi-han-va-goi-dich-vu` | Trigger Free/VIP limits |
+| 8 | Admin dashboard | `multi-tenancy-phase-8-tao-admin-dashboard-cho-chu-he-thong` | SystemAdminDashboard + RPC |
 | 9.1 | create-tenant Edge Function | `multi-tenancy-phase-9-1-create-tenant` | System admin tạo tenant |
 | 9.2 | invite-member Edge Function | `multi-tenancy-phase-9-2-invite-member` | Admin mời nhân viên |
 | 9.3 | check-subdomain Edge Function | `multi-tenancy-phase-9-3-check-subdomain` | Kiểm tra subdomain available |
@@ -133,7 +133,7 @@ Mỗi chat chỉ làm **một sub-phase** (một OpenSpec change). Không gộp 
 | 14 | Codebase cleanup | `multi-tenancy-phase-14-d-n-d-p-codebase` | Xóa backup tables, dead code |
 | 15 | Staging tests | `multi-tenancy-phase-15-test-tr-n-staging-gi-nguy-n` | Chạy checklist trên staging |
 | 16 | Production deploy | `multi-tenancy-phase-16-deploy-production` | DNS, Storage RLS, migration, deploy |
-| 17 | Long-term operations | `multi-tenancy-phase-17-thi-t-l-p-v-n-h-nh-d-i-h-n` | Backup, retention, monitoring, runbook |
+| 17 | Long-term operations | `multi-tenancy-phase-17-thiet-lap-van-hanh-dai-han` | Backup, retention, monitoring, runbook |
 
 ## Các bước lặp lại cho mỗi chat
 
@@ -396,7 +396,7 @@ Thực hiện Phase 7 — Thiết kế giới hạn và gói dịch vụ.
 
 Yêu cầu:
 - Đọc `memory-zone/KE_HOACH/NHOM_1/KE_HOACH_CHI_TIET_MULTI_TENANCY_SUB_PHASE.md`, section Phase 7.
-- Đọc OpenSpec change `multi-tenancy-phase-7-thi-t-k-gi-i-h-n-v-g-i-d-ch-v-gi-nguy-n`.
+- Đọc OpenSpec change `multi-tenancy-phase-7-thiet-ke-gioi-han-va-goi-dich-vu`.
 - Tạo function `check_tenant_limits()` và trigger cho `tenant_memberships`, `products`.
 - Tạo function `increment_monthly_order_count()` và trigger cho `orders`.
 - Tạo `services/subscriptionService.ts`.
@@ -411,7 +411,7 @@ Thực hiện Phase 8 — Tạo admin dashboard cho chủ hệ thống.
 
 Yêu cầu:
 - Đọc `memory-zone/KE_HOACH/NHOM_1/KE_HOACH_CHI_TIET_MULTI_TENANCY_SUB_PHASE.md`, section Phase 8.
-- Đọc OpenSpec change `multi-tenancy-phase-8-t-o-admin-dashboard-cho-ch-h-th-ng-gi-nguy-n`.
+- Đọc OpenSpec change `multi-tenancy-phase-8-tao-admin-dashboard-cho-chu-he-thong`.
 - Tạo `pages/SystemAdminDashboard.tsx`.
 - Route `/admin/*` hoặc subdomain `admin.vietsalepro.com`.
 - Tạo RPC `create_tenant_with_admin`, `update_tenant_status`.
@@ -569,7 +569,7 @@ Thực hiện Phase 12.1 — Bật TypeScript strict + fix core services/types.
 
 Yêu cầu:
 - Đọc `memory-zone/KE_HOACH/NHOM_1/KE_HOACH_CHI_TIET_MULTI_TENANCY_SUB_PHASE.md`, section Sub-phase 12.1.
-- Đọc OpenSpec change `multi-tenancy-phase-12-1-b-t-strict-fix-core-services-types`.
+- Đọc OpenSpec change `multi-tenancy-phase-12-1-bat-strict-fix-core-services-types`.
 - Bật `"strict": true` trong `tsconfig.json`.
 - Fix `services/supabaseService.ts` (CRUD cơ bản, không chạm logic nghiệp vụ sâu).
 - Fix `types.ts`, `utils/`, `hooks/`.
@@ -647,7 +647,7 @@ Thực hiện Phase 14 — Dọn dẹp codebase.
 
 Yêu cầu:
 - Đọc `memory-zone/KE_HOACH/NHOM_1/KE_HOACH_CHI_TIET_MULTI_TENANCY_SUB_PHASE.md`, section Phase 14.
-- Đọc OpenSpec change `multi-tenancy-phase-14-d-n-d-p-codebase`.
+- Đọc OpenSpec change `multi-tenancy-phase-14-don-dep-codebase`.
 - Drop các backup tables đã deploy.
 - Xóa `components/MobilePOS.backup.tsx` nếu còn.
 - Xóa file test tạm, console.log, dead code.
@@ -662,7 +662,7 @@ Thực hiện Phase 15 — Test trên staging.
 
 Yêu cầu:
 - Đọc `memory-zone/KE_HOACH/NHOM_1/KE_HOACH_CHI_TIET_MULTI_TENANCY_SUB_PHASE.md`, section Phase 15.
-- Đọc OpenSpec change `multi-tenancy-phase-15-test-tr-n-staging-gi-nguy-n`.
+- Đọc OpenSpec change `multi-tenancy-phase-15-test-tren-staging`.
 - Tạo 3 tenants: `store-a`, `store-b`, `store-c`.
 - Mỗi tenant có 1 admin, 1 cashier, 1 inventory_manager, 1 accountant.
 - Chạy checklist: data isolation, RBAC, suspend, 404, storage RLS, subscription limits, password reset, rate limiting, offline sync, audit log.
@@ -694,7 +694,7 @@ Thực hiện Phase 17 — Thiết lập vận hành dài hạn.
 
 Yêu cầu:
 - Đọc `memory-zone/KE_HOACH/NHOM_1/KE_HOACH_CHI_TIET_MULTI_TENANCY_SUB_PHASE.md`, section Phase 17.
-- Đọc OpenSpec change `multi-tenancy-phase-17-thi-t-l-p-v-n-h-nh-d-i-h-n`.
+- Đọc OpenSpec change `multi-tenancy-phase-17-thiet-lap-van-hanh-dai-han`.
 - Archive đơn hàng > 2 năm.
 - Partition `app_audit_log` theo tháng (khi cần).
 - Setup cron `data-retention-daily`.

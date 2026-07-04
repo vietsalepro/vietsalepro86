@@ -19,7 +19,7 @@ Backup, retention, monitoring, cron, tài liệu vận hành.
 ## Capabilities
 
 ### New Capabilities
-- `thi-t-l-p-v-n-h-nh-d-i-h-n`: Backup, retention, monitoring, cron, tài liệu vận hành.
+- `thiet-lap-van-hanh-dai-han`: Backup, retention, monitoring, cron, tài liệu vận hành.
 
 ### Modified Capabilities
 - None outside this sub-phase.
