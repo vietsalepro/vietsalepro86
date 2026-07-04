@@ -17,8 +17,8 @@
 
 ## Acceptance Criteria
 
-- [ ] Các bảng config đã có cột `tenant_id` và FK.
-- [ ] `types.ts` không còn lỗi TS.
+- [x] Các bảng config đã có cột `tenant_id` và FK.
+- [x] `types.ts` không còn lỗi TS.
 
 ## Rollback Plan
 

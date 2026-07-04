@@ -707,6 +707,7 @@ export interface ExtendedOrder extends Order {
 
 // ─── APP SETTINGS ─────────────────────────────────────────────
 export interface AppSettings {
+  tenantId?: string;
   storeName: string;
   storePhone?: string;
   storeAddress: string;
