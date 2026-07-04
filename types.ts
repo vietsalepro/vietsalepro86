@@ -6,6 +6,7 @@
 export interface Product {
   // Core identification
   id: string;
+  tenantId?: string;
   name: string;
   code?: string;
   displayName?: string;
@@ -60,6 +61,7 @@ export interface Product {
 // ─── CUSTOMER ─────────────────────────────────────────────────
 export interface Customer {
   id: string;
+  tenantId?: string;
   code?: string;
   name: string;
   phone?: string;
@@ -85,6 +87,7 @@ export interface Customer {
 // ─── SUPPLIER ─────────────────────────────────────────────────
 export interface Supplier {
   id: string;
+  tenantId?: string;
   code?: string;
   name: string;
   phone?: string;
@@ -133,6 +136,7 @@ export interface BrandManagementItem {
 // ─── ORDER ────────────────────────────────────────────────────
 export interface Order {
   id: string;
+  tenantId?: string;
   customer?: string;
   customerId?: string;
   customerName: string;
@@ -166,6 +170,7 @@ export interface Order {
 
 export interface OrderItem {
   id?: string;
+  tenantId?: string;
   name?: string;
   productName?: string;
   quantity: number;
@@ -333,6 +338,7 @@ export interface PromotionTier {
 
 export interface Promotion {
   id: string;
+  tenantId?: string;
   name: string;
   description?: string;
   type: PromotionType;
