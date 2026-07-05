@@ -2,6 +2,11 @@
 
 This change implements sub-phase 11: Thêm audit log (giữ nguyên) from the multi-tenancy migration plan.
 
+> **Phase 7 deferred note:** Phase 7 listed the following audit-log constraints that must be satisfied by this phase:
+> 1. Trigger `write_audit_log` tự động chỉ ghi `INSERT`/`UPDATE`/`DELETE` với `old_data`/`new_data`.
+> 2. Cột `ip_address` và `user_agent` trong bảng `app_audit_log` chỉ được điền khi ghi log thủ công.
+> 3. Các sự kiện `LOGIN`, `LOGOUT`, `EXPORT` phải gọi `services/auditService.ts` và truyền IP/user agent từ Edge Function hoặc để `NULL`.
+
 ## Goals / Non-Goals
 
 **Goals:**

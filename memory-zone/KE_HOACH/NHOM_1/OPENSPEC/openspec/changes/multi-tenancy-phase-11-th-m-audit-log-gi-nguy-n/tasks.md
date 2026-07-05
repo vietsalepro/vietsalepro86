@@ -6,6 +6,11 @@
 
 ## 1. Sub-phase 11: Thêm audit log (giữ nguyên)
 
+> **Phase 7 deferred note:** Đảm bảo 3 ràng buộc từ `KE_HOACH_CHI_TIET_MULTI_TENANCY_SUB_PHASE.md` Phase 7:
+> - Trigger `write_audit_log` tự động chỉ ghi `INSERT`/`UPDATE`/`DELETE` với `old_data`/`new_data`.
+> - `ip_address`/`user_agent` chỉ điền khi ghi log thủ công.
+> - `LOGIN`/`LOGOUT`/`EXPORT` phải gọi `services/auditService.ts` và truyền IP/user agent từ Edge Function hoặc `NULL`.
+
 - [ ] 1.1 Run SQL migration block(s) for this sub-phase
 - [ ] 1.2 `services/auditService.ts`: hàm `writeAuditLog` để ghi thủ công các sự kiện không có trigger (`LOGIN`, `LOGOUT`, `EXPORT`). Hàm này cũng điền `ip_address` và `user_agent` từ request headers (chỉ khi gọi từ Edge Function) hoặc để NULL nếu không có.
 - [ ] 1.3 Page xem audit log (chỉ admin/system admin).
