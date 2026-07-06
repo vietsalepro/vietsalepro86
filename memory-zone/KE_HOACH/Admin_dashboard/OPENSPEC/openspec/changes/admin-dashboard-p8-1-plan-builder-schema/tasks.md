@@ -15,7 +15,7 @@
 - [x] 2.1 Run `npm run lint`
 - [x] 2.2 Run `npm run build` if this sub-phase touches code
 - [x] 2.3 Manual test the acceptance criteria (smoke test P8.1 CRUD plans)
-- [ ] 2.4 Deploy and test migration on Supabase if applicable (migration SQL đã sẵn sàng, chờ deploy)
+- [x] 2.4 Deploy and test migration on Supabase if applicable (deployed to project rsialbfjswnrkzcxarnj via `supabase db query --linked`)
 
 ## Acceptance Criteria
 

@@ -663,7 +663,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION public.create_invoice(
   p_tenant_id UUID,
-  p_cycle_type TEXT,
+  p_cycle_type TEXT DEFAULT 'monthly',
   p_quantity INTEGER DEFAULT 1,
   p_bonus_months INTEGER DEFAULT 0,
   p_notes TEXT DEFAULT NULL

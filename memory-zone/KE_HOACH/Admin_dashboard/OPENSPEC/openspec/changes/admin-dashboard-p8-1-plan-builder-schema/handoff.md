@@ -27,7 +27,8 @@
 
 ## Blockers / Decisions
 
-- Migration SQL đã sẵn sàng nhưng chưa deploy lên Supabase production (cần user chạy `supabase migrations apply` hoặc thực thi SQL trong SQL Editor).
+- Migration `20250706000011_phase_p8_1_plan_builder_schema.sql` đã deploy thành công lên Supabase project `rsialbfjswnrkzcxarnj` (QLBH) qua `supabase db query --linked`.
+- Đã kiểm tra bảng `plans` seed đúng Free/VIP limits và pricing trên DB thật.
 
 ## Backup Location
 
