@@ -1,5 +1,6 @@
 import React from 'react';
 import { CreditCard, ChevronRight, Loader2 } from 'lucide-react';
+import { useTenant } from '../../../hooks/useTenant';
 import './CheckoutButton.css';
 
 interface CheckoutButtonProps {
@@ -14,10 +15,12 @@ interface CheckoutButtonProps {
  * Style đồng bộ với ig-btn-primary (slate-800, không gradient tím)
  */
 export const CheckoutButton: React.FC<CheckoutButtonProps> = ({ onClick, disabled, loading, total }) => {
+  const { isReadOnly } = useTenant();
   return (
     <button
       onClick={onClick}
-      disabled={disabled || loading}
+      disabled={disabled || loading || isReadOnly}
+      title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
       className="checkout-btn"
     >
       {loading ? (

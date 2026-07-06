@@ -3,6 +3,7 @@ import {
   resetMockData,
   setCurrentUserId,
   setCurrentTenantId,
+  setSystemAdmin,
   mockSupabase,
 } from './mocks/supabase';
 
@@ -18,6 +19,10 @@ import {
   getTenantMembers,
   getTenantById,
   getCurrentUserTenants,
+  searchTenants,
+  updateTenant,
+  softDeleteTenant,
+  restoreTenant,
 } from '../services/tenantService';
 
 describe('tenant/auth/membership', () => {
@@ -114,5 +119,54 @@ describe('tenant/auth/membership', () => {
     const found2 = await getTenantById(tenant.id);
     expect(found2).not.toBeNull();
     expect(found2?.id).toBe(tenant.id);
+  });
+});
+
+describe('system admin tenant management', () => {
+  beforeEach(() => {
+    resetMockData();
+    setSystemAdmin(true);
+  });
+
+  it('searchTenants tìm kiếm, lọc theo gói và phân trang', async () => {
+    setCurrentUserId('admin-001');
+    await createTenantWithAdmin({ name: 'Cửa hàng Alpha', subdomain: 'alpha', plan: 'free' });
+    await createTenantWithAdmin({ name: 'Cửa hàng Beta', subdomain: 'beta', plan: 'vip' });
+    await createTenantWithAdmin({ name: 'Shop Gamma', subdomain: 'gamma', plan: 'free' });
+
+    const res = await searchTenants({ searchTerm: 'Cửa hàng', pageSize: 2 });
+    expect(res.tenants.length).toBe(2);
+    expect(res.totalCount).toBe(2);
+    expect(res.counts.free).toBe(1);
+    expect(res.counts.vip).toBe(1);
+    expect(res.counts.active).toBeGreaterThanOrEqual(2);
+
+    const page2 = await searchTenants({ searchTerm: 'Cửa hàng', page: 2, pageSize: 1 });
+    expect(page2.tenants.length).toBe(1);
+    expect(page2.totalCount).toBe(2);
+
+    const filtered = await searchTenants({ plan: 'free' });
+    expect(filtered.tenants.every(t => t.plan === 'free')).toBe(true);
+  });
+
+  it('updateTenant cập nhật tên, gói và trạng thái', async () => {
+    setCurrentUserId('admin-002');
+    const tenant = await createTenantWithAdmin({ name: 'Cửa hàng D', subdomain: 'store-d', plan: 'free' });
+    const updated = await updateTenant(tenant.id, { name: 'Cửa hàng D+', plan: 'vip', status: 'suspended' });
+    expect(updated.name).toBe('Cửa hàng D+');
+    expect(updated.plan).toBe('vip');
+    expect(updated.status).toBe('suspended');
+  });
+
+  it('softDeleteTenant lưu trữ và restoreTenant khôi phục', async () => {
+    setCurrentUserId('admin-003');
+    const tenant = await createTenantWithAdmin({ name: 'Cửa hàng E', subdomain: 'store-e', plan: 'free' });
+    const archived = await softDeleteTenant(tenant.id);
+    expect(archived.status).toBe('archived');
+    expect(archived.archivedAt).toBeTruthy();
+
+    const restored = await restoreTenant(tenant.id);
+    expect(restored.status).toBe('active');
+    expect(restored.archivedAt).toBeFalsy();
   });
 });

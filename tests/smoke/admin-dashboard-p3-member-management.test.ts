@@ -1,0 +1,109 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  resetMockData,
+  setCurrentUserId,
+  setSystemAdmin,
+  addMockRow,
+  getMockRows,
+} from '../mocks/supabase';
+
+vi.mock('../../lib/supabase', async () => {
+  const { mockSupabase } = await import('../mocks/supabase');
+  return { supabase: mockSupabase };
+});
+
+import {
+  createTenantWithAdmin,
+  getTenantMembersWithEmail,
+  inviteMemberByEmail,
+  updateMemberRole,
+  removeMember,
+  resetMemberPassword,
+} from '../../services/tenantService';
+
+// ponytail: smoke test P3 member management. Dùng mock in-memory để xác minh
+// invite/change role/remove/reset và giới hạn user của gói.
+
+describe('smoke: admin dashboard P3 member management', () => {
+  beforeEach(() => {
+    resetMockData();
+  });
+
+  const seedTenant = async () => {
+    setCurrentUserId('sys-admin');
+    setSystemAdmin(true);
+    return createTenantWithAdmin({
+      name: 'P3 Store',
+      subdomain: 'p3-store',
+      plan: 'free',
+    });
+  };
+
+  it('get_tenant_members_with_email trả về thành viên kèm email', async () => {
+    const tenant = await seedTenant();
+    const members = await getTenantMembersWithEmail(tenant.id);
+    expect(members.length).toBe(1);
+    expect(members[0].email).toContain('user-');
+    expect(members[0].role).toBe('admin');
+  });
+
+  it('invite_member_by_email thêm user vào tenant', async () => {
+    const tenant = await seedTenant();
+    // ponytail: tăng max_users để có thể mời thêm trong mock.
+    const sub = getMockRows('tenant_subscriptions').find(s => s.tenant_id === tenant.id);
+    if (sub) sub.max_users = 5;
+
+    const res = await inviteMemberByEmail(tenant.id, 'cashier@example.com', 'cashier');
+    expect(res.success).toBe(true);
+
+    const members = await getTenantMembersWithEmail(tenant.id);
+    expect(members.length).toBe(2);
+    expect(members.some(m => m.role === 'cashier')).toBe(true);
+  });
+
+  it('không mời quá giới hạn user của gói', async () => {
+    const tenant = await seedTenant();
+    // Free gói mặc định 1 user; owner đã chiếm 1 slot.
+    await expect(inviteMemberByEmail(tenant.id, 'extra@example.com', 'cashier')).rejects.toThrow('giới hạn');
+
+    const members = await getTenantMembersWithEmail(tenant.id);
+    expect(members.length).toBe(1);
+  });
+
+  it('update_member_role đổi vai trò', async () => {
+    const tenant = await seedTenant();
+    const owner = getMockRows('tenant_memberships').find(m => m.tenant_id === tenant.id)!;
+    const updated = await updateMemberRole(tenant.id, owner.user_id, 'inventory_manager');
+    expect(updated.role).toBe('inventory_manager');
+  });
+
+  it('remove_member xóa thành viên', async () => {
+    const tenant = await seedTenant();
+    // ponytail: tăng max_users để mời được cashier trong mock (free mặc định 1).
+    const sub = getMockRows('tenant_subscriptions').find(s => s.tenant_id === tenant.id);
+    if (sub) sub.max_users = 5;
+
+    await inviteMemberByEmail(tenant.id, 'cashier@example.com', 'cashier');
+    const cashier = getMockRows('tenant_memberships').find(m => m.tenant_id === tenant.id && m.role === 'cashier');
+    expect(cashier).toBeTruthy();
+    if (!cashier) throw new Error('Không tìm thấy cashier');
+    await removeMember(tenant.id, cashier.user_id);
+
+    const members = await getTenantMembersWithEmail(tenant.id);
+    expect(members.length).toBe(1);
+  });
+
+  it('reset_member_password trả về link redirect', async () => {
+    const tenant = await seedTenant();
+    const owner = getMockRows('tenant_memberships').find(m => m.tenant_id === tenant.id)!;
+    const res = await resetMemberPassword(tenant.id, owner.user_id);
+    expect(res.success).toBe(true);
+    expect(res.redirectTo).toContain('reset-password');
+  });
+
+  it('non-system admin bị từ chối xem danh sách thành viên', async () => {
+    const tenant = await seedTenant();
+    setSystemAdmin(false);
+    await expect(getTenantMembersWithEmail(tenant.id)).rejects.toThrow();
+  });
+});

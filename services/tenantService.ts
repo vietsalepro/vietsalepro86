@@ -2,12 +2,16 @@ import { supabase } from '../lib/supabase';
 import {
   Tenant,
   TenantMembership,
+  MemberWithEmail,
   TenantRole,
   TenantSubscription,
   TenantStatus,
   TenantPlan,
   UsageSummary,
   UpdateSubscriptionInput,
+  SystemOverview,
+  TopTenant,
+  TenantGrowthPoint,
 } from '../types/tenant';
 
 // --- Mappers ---
@@ -210,6 +214,44 @@ export async function getTenantMembers(tenantId: string): Promise<TenantMembersh
   return (data || []).map(mapMembershipFromDB);
 }
 
+const mapMemberWithEmailFromDB = (row: any): MemberWithEmail => ({
+  ...mapMembershipFromDB(row),
+  email: row.email,
+  invitedByEmail: row.invited_by_email,
+});
+
+export async function getTenantMembersWithEmail(tenantId: string): Promise<MemberWithEmail[]> {
+  const { data, error } = await supabase.rpc('get_tenant_members_with_email', { p_tenant_id: tenantId });
+  if (error) throw error;
+  return (data || []).map(mapMemberWithEmailFromDB);
+}
+
+
+export async function inviteMemberByEmail(
+  tenantId: string,
+  email: string,
+  role: TenantRole
+): Promise<{ success: boolean; message?: string }> {
+  const { data, error } = await (supabase as any).functions.invoke('invite-member', {
+    body: { tenant_id: tenantId, email, role },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return { success: true, ...data };
+}
+
+export async function resetMemberPassword(
+  tenantId: string,
+  userId: string
+): Promise<{ success: boolean; action?: string; redirectTo?: string; link?: string | null }> {
+  const { data, error } = await (supabase as any).functions.invoke('reset-password', {
+    body: { tenant_id: tenantId, user_id: userId },
+  });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return { success: true, ...data };
+}
+
 export async function inviteMember(
   tenantId: string,
   userId: string,
@@ -353,4 +395,61 @@ export async function createTenantSubscription(tenantId: string): Promise<Tenant
 export async function deleteTenant(tenantId: string): Promise<void> {
   const { error } = await supabase.from('tenants').delete().eq('id', tenantId);
   if (error) throw error;
+}
+
+// --- System analytics (requires system admin privileges) ---
+
+const mapSystemOverviewFromDB = (row: any): SystemOverview => ({
+  totalTenants: row.totalTenants ?? 0,
+  activeTenants: row.activeTenants ?? 0,
+  trialTenants: row.trialTenants ?? 0,
+  vipTenants: row.vipTenants ?? 0,
+  expiringSoon: row.expiringSoon ?? 0,
+  nearLimit: row.nearLimit ?? 0,
+  newThisMonth: row.newThisMonth ?? 0,
+  expiringTenants: (row.expiringTenants ?? []).map((t: any) => ({
+    id: t.id,
+    name: t.name,
+    subdomain: t.subdomain,
+    expiresAt: t.expires_at,
+    daysRemaining: t.days_remaining,
+  })),
+  nearLimitTenants: (row.nearLimitTenants ?? []).map((t: any) => ({
+    id: t.id,
+    name: t.name,
+    subdomain: t.subdomain,
+    userPercent: t.user_percent ?? 0,
+    productPercent: t.product_percent ?? 0,
+    orderPercent: t.order_percent ?? 0,
+  })),
+});
+
+export async function getSystemOverview(): Promise<SystemOverview> {
+  const { data, error } = await supabase.rpc('get_system_overview');
+  if (error) throw error;
+  return mapSystemOverviewFromDB(data);
+}
+
+const mapTopTenantFromDB = (row: any): TopTenant => ({
+  id: row.id,
+  name: row.name,
+  subdomain: row.subdomain,
+  status: row.status,
+  plan: row.plan,
+  createdAt: row.created_at,
+  ordersThisMonth: row.orders_this_month ?? 0,
+  userCount: row.user_count ?? 0,
+  productCount: row.product_count ?? 0,
+});
+
+export async function getTopTenants(limit = 10): Promise<TopTenant[]> {
+  const { data, error } = await supabase.rpc('get_top_tenants', { p_limit: limit });
+  if (error) throw error;
+  return (data || []).map(mapTopTenantFromDB);
+}
+
+export async function getTenantGrowth(months = 6): Promise<TenantGrowthPoint[]> {
+  const { data, error } = await supabase.rpc('get_tenant_growth', { p_months: months });
+  if (error) throw error;
+  return (data || []).map((row: any) => ({ month: row.month, count: row.count ?? 0 }));
 }

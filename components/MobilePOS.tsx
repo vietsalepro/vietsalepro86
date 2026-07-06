@@ -9,6 +9,7 @@ import {
 import { Product, Customer, Invoice, CartItem, AppSettings, Reward, Promotion, RedeemedReward } from '../types';
 import { supabaseService } from '../services/supabaseService';
 import { useDebounce } from '../hooks/useDebounce';
+import { useTenant } from '../hooks/useTenant';
 import BarcodeScannerFix from './BarcodeScannerFix';
 import { applyPromotions, applyBestPromotions, suggestPromotions } from '../utils/promotionUtils';
 import { getAvailableLots, sortLotsByFifoExpiry, validateLotQuantity } from '../utils/lotUtils';
@@ -153,6 +154,7 @@ export function MobilePOS(props: MobilePOSProps) {
     onUpdateInvoices, onSetActiveTabId, onCheckout, onAddCustomer,
     appSettings, rewards, promotions
   } = props;
+  const { isReadOnly } = useTenant();
 
   // Suppress unused-variable warnings for props we accept but don't directly read here
   void appSettings;
@@ -1081,10 +1083,11 @@ export function MobilePOS(props: MobilePOSProps) {
 
           {/* ============== CTA 2: THANH TOÁN ============== */}
           <motion.button
-            whileTap={hasCartItems ? { scale: 0.97 } : undefined}
+            whileTap={hasCartItems && !isReadOnly ? { scale: 0.97 } : undefined}
             onClick={handleOpenPayment}
-            disabled={!hasCartItems}
-            className={`w-full flex items-center justify-between px-5 relative mpos-cta-payment${hasCartItems ? '' : ' mpos-cta-payment--disabled'}`}
+            disabled={!hasCartItems || isReadOnly}
+            title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
+            className={`w-full flex items-center justify-between px-5 relative mpos-cta-payment${hasCartItems && !isReadOnly ? '' : ' mpos-cta-payment--disabled'}`}
           >
             <div className="flex items-center gap-3">
               <div
@@ -1249,10 +1252,11 @@ export function MobilePOS(props: MobilePOSProps) {
 
               {/* Confirm */}
               <motion.button
-                whileTap={!isProcessing ? { scale: 0.97 } : undefined}
+                whileTap={!isProcessing && !isReadOnly ? { scale: 0.97 } : undefined}
                 onClick={handlePaymentConfirm}
-                disabled={isProcessing}
-                className={`w-full flex items-center justify-center gap-2 py-4 font-bold text-base mpos-confirm-btn${isProcessing ? ' mpos-confirm-btn--processing' : ''}`}
+                disabled={isProcessing || isReadOnly}
+                title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
+                className={`w-full flex items-center justify-center gap-2 py-4 font-bold text-base mpos-confirm-btn${isProcessing || isReadOnly ? ' mpos-confirm-btn--processing' : ''}`}
               >
                 {isProcessing ? (
                   <><Loader2 className="w-5 h-5 animate-spin" /> Đang xử lý...</>

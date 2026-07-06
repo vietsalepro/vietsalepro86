@@ -2,7 +2,7 @@
 // TENANT TYPES - Multi-tenancy foundation
 // ============================================================
 
-export type TenantStatus = 'active' | 'suspended' | 'trial' | 'pending' | 'archived';
+export type TenantStatus = 'active' | 'suspended' | 'trial' | 'pending' | 'archived' | 'read_only';
 export type TenantPlan = 'free' | 'vip';
 
 export type TenantRole = 'admin' | 'cashier' | 'inventory_manager' | 'accountant';
@@ -28,6 +28,11 @@ export interface TenantMembership {
   invitedBy?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface MemberWithEmail extends TenantMembership {
+  email?: string;
+  invitedByEmail?: string;
 }
 
 export interface TenantSubscription {
@@ -68,4 +73,75 @@ export interface UpdateSubscriptionInput {
   maxOrdersPerMonth?: number;
   billingStatus?: BillingStatus;
   expiresAt?: string | null;
+}
+
+export interface ExpiringTenant {
+  id: string;
+  name: string;
+  subdomain: string;
+  expiresAt: string;
+  daysRemaining: number;
+}
+
+export interface NearLimitTenant {
+  id: string;
+  name: string;
+  subdomain: string;
+  userPercent: number;
+  productPercent: number;
+  orderPercent: number;
+}
+
+export interface SystemOverview {
+  totalTenants: number;
+  activeTenants: number;
+  trialTenants: number;
+  vipTenants: number;
+  expiringSoon: number;
+  nearLimit: number;
+  newThisMonth: number;
+  expiringTenants: ExpiringTenant[];
+  nearLimitTenants: NearLimitTenant[];
+}
+
+export interface TopTenant {
+  id: string;
+  name: string;
+  subdomain: string;
+  status: TenantStatus;
+  plan: TenantPlan;
+  createdAt?: string;
+  ordersThisMonth: number;
+  userCount: number;
+  productCount: number;
+}
+
+export interface TenantGrowthPoint {
+  month: string;
+  count: number;
+}
+
+export interface PlanLimits {
+  maxUsers: number;
+  maxProducts: number;
+  maxOrdersPerMonth: number;
+}
+
+export interface DefaultPlanLimits {
+  free: PlanLimits;
+  vip: PlanLimits;
+}
+
+export interface MaintenanceMode {
+  enabled: boolean;
+  message: string;
+}
+
+export interface DataRetentionStatus {
+  archivedOrdersCount: number;
+  archivedOrderItemsCount: number;
+  rateLimitLogsCount: number;
+  lastRun: { run_at?: string } | null;
+  cronSchedule: string;
+  cronJob: any;
 }

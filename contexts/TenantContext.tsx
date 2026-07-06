@@ -9,6 +9,7 @@ interface TenantContextType {
   membership: TenantMembership | null;
   role: TenantRole | null;
   isLoading: boolean;
+  isReadOnly: boolean;
 }
 
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
@@ -113,6 +114,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     membership,
     role: membership?.role || null,
     isLoading,
+    isReadOnly: tenant?.status === 'read_only',
   };
 
   return (

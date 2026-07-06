@@ -104,16 +104,26 @@ serve(async (req) => {
       return jsonResponse({ error: 'Tenant không hoạt động' }, 403);
     }
 
-    const { data: adminMembership, error: adminError } = await supabaseAdmin
-      .from('tenant_memberships')
-      .select('id')
-      .eq('tenant_id', tenant_id)
+    // Caller authorization: system admin or tenant admin.
+    const { data: adminRow, error: adminError } = await supabaseAdmin
+      .from('system_admins')
+      .select('user_id')
       .eq('user_id', user.id)
-      .eq('role', 'admin')
       .maybeSingle();
     if (adminError) throw adminError;
-    if (!adminMembership) {
-      return jsonResponse({ error: 'Chỉ admin của tenant được mời nhân viên' }, 403);
+
+    if (!adminRow) {
+      const { data: tenantAdmin, error: tenantAdminError } = await supabaseAdmin
+        .from('tenant_memberships')
+        .select('id')
+        .eq('tenant_id', tenant_id)
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      if (tenantAdminError) throw tenantAdminError;
+      if (!tenantAdmin) {
+        return jsonResponse({ error: 'Chỉ admin của tenant hoặc system admin được mời nhân viên' }, 403);
+      }
     }
 
     // Subscription limit check.

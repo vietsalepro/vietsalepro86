@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { usePermissions } from '../hooks/usePermissions';
-import { getAuditLogs, AuditLogEntry } from '../services/auditService';
+import { getAuditLogs, AuditLogEntry, AuditAction } from '../services/auditService';
 import { Loader2, ShieldAlert, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const PAGE_SIZE = 50;
+
+const ACTIONS: AuditAction[] = ['INSERT', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'EXPORT'];
 
 const actionLabel: Record<string, string> = {
   INSERT: 'Thêm',
@@ -57,13 +59,26 @@ const DataPreview: React.FC<{ data: any }> = ({ data }) => {
   );
 };
 
-export const AuditLog: React.FC = () => {
+interface AuditLogProps {
+  systemAdmin?: boolean;
+  tenants?: { id: string; name: string }[];
+}
+
+export const AuditLog: React.FC<AuditLogProps> = ({ systemAdmin, tenants }) => {
   const permissions = usePermissions();
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [count, setCount] = useState<number | null>(0);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState({
+    tenantId: '',
+    userId: '',
+    action: '' as AuditAction | '',
+    tableName: '',
+    dateFrom: '',
+    dateTo: '',
+  });
 
   const totalPages = Math.max(1, Math.ceil((count || 0) / PAGE_SIZE));
 
@@ -72,11 +87,19 @@ export const AuditLog: React.FC = () => {
     setError(null);
     try {
       const offset = (currentPage - 1) * PAGE_SIZE;
-      const result = await getAuditLogs({ limit: PAGE_SIZE, offset });
+      const result = await getAuditLogs({
+        limit: PAGE_SIZE,
+        offset,
+        tenantId: systemAdmin ? filters.tenantId || null : null,
+        userId: filters.userId || null,
+        action: filters.action || null,
+        tableName: filters.tableName || null,
+        dateFrom: filters.dateFrom || null,
+        dateTo: filters.dateTo || null,
+      });
       setLogs(result.data);
       setCount(result.count);
     } catch (err: any) {
-
       setError(err?.message || 'Không thể tải nhật ký hoạt động.');
     } finally {
       setLoading(false);
@@ -84,10 +107,15 @@ export const AuditLog: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchLogs(page);
-  }, [page]);
+    setPage(1);
+  }, [filters.tenantId, filters.userId, filters.action, filters.tableName, filters.dateFrom, filters.dateTo]);
 
-  if (!permissions.canViewAuditLogs) {
+  useEffect(() => {
+    fetchLogs(page);
+    // ponytail: eslint exhaustive-deps không được bật trong tsc-only lint; deps giữ ở mức tối thiểu.
+  }, [page, filters]);
+
+  if (!systemAdmin && !permissions.canViewAuditLogs) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center bg-gray-50 p-6">
         <div className="text-center space-y-3">
@@ -114,6 +142,82 @@ export const AuditLog: React.FC = () => {
         </div>
       )}
 
+      {/* Filters */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        {systemAdmin && (
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Cửa hàng</label>
+            {tenants && tenants.length > 0 ? (
+              <select
+                value={filters.tenantId}
+                onChange={(e) => setFilters({ ...filters, tenantId: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Tất cả</option>
+                {tenants.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={filters.tenantId}
+                onChange={(e) => setFilters({ ...filters, tenantId: e.target.value })}
+                placeholder="ID cửa hàng"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            )}
+          </div>
+        )}
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">User ID</label>
+          <input
+            type="text"
+            value={filters.userId}
+            onChange={(e) => setFilters({ ...filters, userId: e.target.value })}
+            placeholder="User ID"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Hành động</label>
+          <select
+            value={filters.action}
+            onChange={(e) => setFilters({ ...filters, action: e.target.value as AuditAction | '' })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Tất cả</option>
+            {ACTIONS.map(a => <option key={a} value={a}>{actionLabel[a]}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Bảng</label>
+          <input
+            type="text"
+            value={filters.tableName}
+            onChange={(e) => setFilters({ ...filters, tableName: e.target.value })}
+            placeholder="Tên bảng"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Từ ngày</label>
+          <input
+            type="date"
+            value={filters.dateFrom}
+            onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Đến ngày</label>
+          <input
+            type="date"
+            value={filters.dateTo}
+            onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         {loading && logs.length === 0 && (
           <div className="flex items-center justify-center p-12">
@@ -135,6 +239,7 @@ export const AuditLog: React.FC = () => {
                   <th className="px-4 py-3 text-left font-medium">Hành động</th>
                   <th className="px-4 py-3 text-left font-medium">Bảng</th>
                   <th className="px-4 py-3 text-left font-medium">Bản ghi</th>
+                  {systemAdmin && <th className="px-4 py-3 text-left font-medium">Cửa hàng</th>}
                   <th className="px-4 py-3 text-left font-medium">Dữ liệu cũ</th>
                   <th className="px-4 py-3 text-left font-medium">Dữ liệu mới</th>
                   <th className="px-4 py-3 text-left font-medium">IP / User-Agent</th>
@@ -155,6 +260,11 @@ export const AuditLog: React.FC = () => {
                     <td className="px-4 py-3 text-gray-700 max-w-[160px] truncate" title={log.recordId ?? undefined}>
                       {log.recordId ?? <span className="text-gray-400">—</span>}
                     </td>
+                    {systemAdmin && (
+                      <td className="px-4 py-3 text-gray-700 max-w-[160px] truncate" title={log.tenantId ?? undefined}>
+                        {log.tenantId ?? <span className="text-gray-400">—</span>}
+                      </td>
+                    )}
                     <td className="px-4 py-3 align-top">
                       <DataPreview data={log.oldData} />
                     </td>

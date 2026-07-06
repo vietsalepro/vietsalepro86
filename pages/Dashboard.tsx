@@ -41,7 +41,7 @@ interface DashboardV2KPIProps {
   trend?: { value: string; direction: 'up' | 'down' | 'neutral' };
 }
 
-const DashboardV2KPI: React.FC<DashboardV2KPIProps> = ({
+export const DashboardV2KPI: React.FC<DashboardV2KPIProps> = ({
   title,
   value,
   icon,

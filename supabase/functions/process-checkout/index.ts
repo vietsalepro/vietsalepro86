@@ -91,7 +91,10 @@ serve(async (req) => {
     if (!tenant) {
       return jsonResponse({ error: 'Tenant không tồn tại' }, 404);
     }
-    if (tenant.status !== 'active') {
+    if (tenant.status === 'read_only') {
+      return jsonResponse({ error: 'TENANT_READ_ONLY' }, 403);
+    }
+    if (tenant.status !== 'active' && tenant.status !== 'trial') {
       return jsonResponse({ error: 'Tenant không hoạt động' }, 403);
     }
     const tenantId = tenant.id;

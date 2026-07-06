@@ -77,7 +77,7 @@ export const Customers: React.FC<CustomersProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [pageSize] = useState(7);
-  const { tenant } = useTenant();
+  const { tenant, isReadOnly } = useTenant();
   const tenantId = tenant?.id;
   const permissions = usePermissions();
 
@@ -569,6 +569,8 @@ export const Customers: React.FC<CustomersProps> = ({
               e?.stopPropagation();
               openModal(customer);
             }}
+            disabled={isReadOnly}
+            title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
             aria-label="Sửa"
           />
           )}
@@ -581,6 +583,8 @@ export const Customers: React.FC<CustomersProps> = ({
               e?.stopPropagation();
               onDeleteCustomer(customer.id);
             }}
+            disabled={isReadOnly}
+            title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
             aria-label="Xóa"
           />
           )}
@@ -844,8 +848,9 @@ export const Customers: React.FC<CustomersProps> = ({
               </button>
               <div className="w-px h-6 bg-slate-200 mx-1"></div>
               <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isImporting}
+                onClick={() => !isImporting && !isReadOnly && fileInputRef.current?.click()}
+                disabled={isImporting || isReadOnly}
+                title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
                 className="p-2 text-slate-600 hover:text-emerald-600 hover:bg-slate-50 rounded-lg flex items-center gap-1 text-sm font-medium disabled:opacity-50"
               >
                 {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
@@ -868,8 +873,10 @@ export const Customers: React.FC<CustomersProps> = ({
             </div>
             {permissions.canCreateOrder && (
             <button
-              onClick={() => openModal()}
-              className="btn-primary flex items-center gap-2 px-4 py-2.5 flex-shrink-0"
+              onClick={() => !isReadOnly && openModal()}
+              disabled={isReadOnly}
+              title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
+              className="btn-primary flex items-center gap-2 px-4 py-2.5 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Thêm khách hàng</span>
@@ -917,7 +924,12 @@ export const Customers: React.FC<CustomersProps> = ({
             <h3 className="text-lg font-semibold text-slate-700 mb-1">Chưa có khách hàng</h3>
             <p className="text-sm text-slate-500 mb-4">Thêm khách hàng đầu tiên để bắt đầu</p>
             {permissions.canCreateOrder && (
-            <button onClick={() => openModal()} className="btn-primary">
+            <button
+              onClick={() => !isReadOnly && openModal()}
+              disabled={isReadOnly}
+              title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <Plus className="w-4 h-4" /> Thêm khách hàng
             </button>
             )}
@@ -1051,8 +1063,9 @@ export const Customers: React.FC<CustomersProps> = ({
                             {permissions.canUpdateOrder && (
                             <button
                               onClick={() => openModal(customer)}
-                              className="crm-action-btn edit"
-                              title="Sửa"
+                              disabled={isReadOnly}
+                              title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : 'Sửa'}
+                              className="crm-action-btn edit disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
@@ -1060,8 +1073,9 @@ export const Customers: React.FC<CustomersProps> = ({
                             {permissions.canDeleteOrder && (
                             <button
                               onClick={() => onDeleteCustomer(customer.id)}
-                              className="crm-action-btn delete"
-                              title="Xóa"
+                              disabled={isReadOnly}
+                              title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : 'Xóa'}
+                              className="crm-action-btn delete disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1217,7 +1231,9 @@ export const Customers: React.FC<CustomersProps> = ({
             {permissions.canDeleteOrder && (
             <button
               onClick={handleBulkDeleteLocal}
-              className="btn btn-danger btn-sm"
+              disabled={isReadOnly}
+              title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
+              className="btn btn-danger btn-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Trash2 className="w-4 h-4" /> Xoá
             </button>
@@ -1460,7 +1476,8 @@ export const Customers: React.FC<CustomersProps> = ({
                     </button>
                     <button
                       type="submit"
-                      disabled={editingCustomer ? !permissions.canUpdateOrder : !permissions.canCreateOrder}
+                      disabled={(editingCustomer ? !permissions.canUpdateOrder : !permissions.canCreateOrder) || isReadOnly}
+                      title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
                       className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {editingCustomer ? 'Cập nhật' : 'Thêm mới'}

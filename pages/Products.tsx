@@ -64,7 +64,7 @@ export const Products: React.FC<InventoryProps> = ({
   // cần toàn bộ danh sách (không phải render list chính, list chính đã server-side paginate).
   const [productsFallback, setProductsFallback] = useState<Product[]>([]);
   const products = productsProp || productsFallback;
-  const { tenant } = useTenant();
+  const { tenant, isReadOnly } = useTenant();
   const tenantId = tenant?.id;
   const permissions = usePermissions();
 
@@ -895,6 +895,8 @@ export const Products: React.FC<InventoryProps> = ({
             size="sm"
             icon={<Edit size={16} />}
             onClick={() => openModal(product)}
+            disabled={isReadOnly}
+            title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
             aria-label="Chỉnh sửa"
           />
           )}
@@ -904,6 +906,8 @@ export const Products: React.FC<InventoryProps> = ({
             size="sm"
             icon={<Trash2 size={16} />}
             onClick={() => onDeleteProduct(product.id)}
+            disabled={isReadOnly}
+            title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
             aria-label="Xoá"
           />
           )}
@@ -1249,10 +1253,11 @@ export const Products: React.FC<InventoryProps> = ({
               <div className="flex items-center bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
                  <button onClick={handleDownloadSample} className="p-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-100 rounded flex items-center gap-1 text-sm font-medium"><FileSpreadsheet className="w-4 h-4"/><span className="hidden sm:inline">Mẫu</span></button>
                  <div className="w-px h-6 bg-slate-200 mx-1"></div>
-                 <button 
-                   onClick={() => !isImporting && fileInputRef.current?.click()} 
-                   disabled={isImporting}
-                   className={`p-2 rounded flex items-center gap-1 text-sm font-medium ${isImporting ? 'text-slate-400 cursor-not-allowed' : 'text-slate-600 hover:text-emerald-600 hover:bg-slate-100'}`}
+                 <button
+                   onClick={() => !isImporting && !isReadOnly && fileInputRef.current?.click()}
+                   disabled={isImporting || isReadOnly}
+                   title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
+                   className={`p-2 rounded flex items-center gap-1 text-sm font-medium ${isImporting || isReadOnly ? 'text-slate-400 cursor-not-allowed' : 'text-slate-600 hover:text-emerald-600 hover:bg-slate-100'}`}
                  >
                    {isImporting ? <Loader2 className="w-4 h-4 animate-spin"/> : <Upload className="w-4 h-4"/>}
                    <span className="hidden sm:inline">{isImporting ? 'Đang nhập...' : 'Nhập'}</span>
@@ -1266,14 +1271,23 @@ export const Products: React.FC<InventoryProps> = ({
               {useNewDataGridInventory && permissions.canDeleteProduct && selectedIds.size > 0 && (
                 <button
                   onClick={handleBulkDeleteAction}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm bg-red-600 text-white hover:bg-red-700 transition-colors"
+                  disabled={isReadOnly}
+                  title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Trash2 className="w-4 h-4" /> Xóa ({selectedIds.size})
                 </button>
               )}
 
               {permissions.canCreateProduct && (
-              <button onClick={() => openModal()} className="btn-primary"><Plus className="w-4 h-4" /> Thêm sản phẩm</button>
+              <button
+                onClick={() => !isReadOnly && openModal()}
+                disabled={isReadOnly}
+                title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
+                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Plus className="w-4 h-4" /> Thêm sản phẩm
+              </button>
               )}
            </div>
       </div>
@@ -1364,7 +1378,7 @@ export const Products: React.FC<InventoryProps> = ({
                 emptyDescription="Thử tìm kiếm với từ khóa khác hoặc thêm sản phẩm mới."
                 emptyAction={
                   permissions.canCreateProduct ? (
-                  <ActionButton variant="primary" size="md" icon={<Plus size={18} />} onClick={() => openModal()}>
+                  <ActionButton variant="primary" size="md" icon={<Plus size={18} />} onClick={() => openModal()} disabled={isReadOnly}>
                     Thêm sản phẩm
                   </ActionButton>
                   ) : undefined
@@ -2136,7 +2150,8 @@ export const Products: React.FC<InventoryProps> = ({
               <button
                 type="submit"
                 form="productForm"
-                disabled={editingProduct ? !permissions.canUpdateProduct : !permissions.canCreateProduct}
+                disabled={(editingProduct ? !permissions.canUpdateProduct : !permissions.canCreateProduct) || isReadOnly}
+                title={isReadOnly ? 'Tài khoản hết hạn — vui lòng thanh toán' : undefined}
                 className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold shadow-lg shadow-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {editingProduct ? 'Cập nhật' : 'Lưu sản phẩm'}

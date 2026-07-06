@@ -20,6 +20,7 @@ describe('smoke: RBAC', () => {
       membership: null,
       role: null,
       isLoading: false,
+      isReadOnly: false,
     });
   });
 
@@ -29,6 +30,7 @@ describe('smoke: RBAC', () => {
       membership: null,
       role,
       isLoading: false,
+      isReadOnly: false,
     });
     return renderHook(() => usePermissions()).result.current;
   };

@@ -72,18 +72,52 @@ export async function writeAuditLog(
   }
 }
 
-export async function getAuditLogs(options: { limit?: number; offset?: number } = {}): Promise<{
+export interface AuditLogFilter {
+  tenantId?: string | null;
+  userId?: string | null;
+  action?: AuditAction | null;
+  tableName?: string | null;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+}
+
+export async function getAuditLogs(
+  options: AuditLogFilter & { limit?: number; offset?: number } = {}
+): Promise<{
   data: AuditLogEntry[];
   count: number | null;
 }> {
   const limit = options.limit ?? 50;
   const offset = options.offset ?? 0;
 
-  const { data, error, count } = await supabase
+  let query = supabase
     .from('app_audit_log')
     .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
+    .order('created_at', { ascending: false });
+
+  if (options.tenantId) {
+    query = query.eq('tenant_id', options.tenantId);
+  }
+  if (options.userId) {
+    query = query.eq('user_id', options.userId);
+  }
+  if (options.action) {
+    query = query.eq('action', options.action);
+  }
+  if (options.tableName) {
+    query = query.ilike('table_name', `%${options.tableName}%`);
+  }
+  if (options.dateFrom) {
+    query = query.gte('created_at', options.dateFrom);
+  }
+  if (options.dateTo) {
+    // ponytail: bao gồm cả ngày kết thúc đến cuối ngày.
+    const end = new Date(options.dateTo);
+    end.setHours(23, 59, 59, 999);
+    query = query.lte('created_at', end.toISOString());
+  }
+
+  const { data, error, count } = await query.range(offset, offset + limit - 1);
 
   if (error) {
     throw new AppError(error.message || 'Lỗi đọc audit log', 'AUDIT_LOG_READ_ERROR', { originalError: error });
