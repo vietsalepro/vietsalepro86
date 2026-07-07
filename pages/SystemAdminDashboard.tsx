@@ -9,6 +9,7 @@ import { useDebounce } from '../hooks/useDebounce';
 import { DashboardV2KPI } from './Dashboard';
 import { AuditLog } from './AuditLog';
 import BillingConfig from '../components/BillingConfig';
+import VoucherManager from '../components/VoucherManager';
 import './Dashboard.css';
 import {
   Tenant,
@@ -95,6 +96,32 @@ const statusLabel = (status: TenantStatus) => {
 };
 
 const planLabel = (plan: TenantPlan) => plan === 'free' ? 'Free' : 'VIP';
+const MONTHLY_PRICE_VIP = 69000;
+
+export const calculateProration = (
+  currentPlan: TenantPlan,
+  newPlan: TenantPlan,
+  expiresAt?: string | null
+) => {
+  if (currentPlan === newPlan) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const end = expiresAt ? new Date(expiresAt) : null;
+  if (!end || end.getTime() <= today.getTime()) return null;
+  const remainingDays = Math.ceil((end.getTime() - today.getTime()) / 86400000);
+  const currentMonthly = currentPlan === 'vip' ? MONTHLY_PRICE_VIP : 0;
+  const newMonthly = newPlan === 'vip' ? MONTHLY_PRICE_VIP : 0;
+  const credit = Math.round((currentMonthly * remainingDays) / 30);
+  const charge = Math.round((newMonthly * remainingDays) / 30);
+  const net = charge - credit;
+  return {
+    remainingDays,
+    credit,
+    charge,
+    net,
+    isRefund: net < 0,
+  };
+};
 
 const ROLES: TenantRole[] = ['admin', 'cashier', 'inventory_manager', 'accountant'];
 
@@ -253,7 +280,7 @@ export default function SystemAdminDashboard() {
   const [featureLoading, setFeatureLoading] = useState(false);
   const [featureSubmitting, setFeatureSubmitting] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'tenants' | 'members' | 'audit' | 'rateLimit' | 'systemAdmins' | 'operations' | 'billing'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'tenants' | 'members' | 'audit' | 'rateLimit' | 'systemAdmins' | 'operations' | 'billing' | 'vouchers'>('overview');
   const [allTenants, setAllTenants] = useState<Tenant[]>([]);
   const [memberTenantId, setMemberTenantId] = useState<string>('');
   const [members, setMembers] = useState<MemberWithEmail[]>([]);
@@ -889,6 +916,12 @@ export default function SystemAdminDashboard() {
             className={`px-4 py-2 text-sm font-medium rounded-lg ${activeTab === 'billing' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
           >
             Thanh toán
+          </button>
+          <button
+            onClick={() => setActiveTab('vouchers')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg ${activeTab === 'vouchers' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+          >
+            Voucher
           </button>
         </div>
 
@@ -1772,6 +1805,8 @@ export default function SystemAdminDashboard() {
 
     {activeTab === 'billing' && <BillingConfig />}
 
+    {activeTab === 'vouchers' && <VoucherManager />}
+
   </div>
 
   {/* Edit modal */}
@@ -1914,6 +1949,25 @@ export default function SystemAdminDashboard() {
                   />
                 </div>
               </div>
+: {(() => {
+                const proration = subTenant ? calculateProration(subTenant.plan, subForm.plan, subForm.expiresAt) : null;
+                return proration ? (
+                  <div className="p-4 rounded-lg border border-indigo-100 bg-indigo-50 space-y-1 text-sm">
+                    <p className="font-medium text-indigo-900">Review proration</p>
+                    <p className="text-indigo-800">Số ngày còn lại của chu kỳ hiện tại: <span className="font-medium">{proration.remainingDays} ngày</span></p>
+                    <p className="text-indigo-800">Tín dụng từ gói cũ: <span className="font-medium">{proration.credit.toLocaleString('vi-VN')}đ</span></p>
+                    <p className="text-indigo-800">Phí gói mới tính prorated: <span className="font-medium">{proration.charge.toLocaleString('vi-VN')}đ</span></p>
+                    <p className="text-indigo-800">
+                      {proration.isRefund
+                        ? <>Số tiền <span className="font-medium">hoãn</span> (credit): {Math.abs(proration.net).toLocaleString('vi-VN')}đ</>
+                        : <>Số tiền cần thu thêm: <span className="font-medium">{proration.net.toLocaleString('vi-VN')}đ</span></>}
+                    </p>
+                    <p className="text-xs text-indigo-600 mt-1">
+                      ponytail: tính toán thủ công 30 ngày/tháng, chỉ để admin review trước khi lưu. Không tự động tạo hóa đơn/tính tiền.
+                    </p>
+                  </div>
+                ) : null;
+              })()}
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"

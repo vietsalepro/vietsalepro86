@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  FileText, Download, Eye, X, Clock, Building2, CreditCard, Search, Mail,
+  FileText, Download, Eye, X, Clock, Building2, CreditCard, Search, Mail, Tag,
 } from 'lucide-react';
 import {
   InvoiceWithTenant,
@@ -21,6 +21,7 @@ import {
   getCompanyInfo,
 } from '../services/bankAccountService';
 import { exportInvoiceToPdf } from '../utils/invoicePdfExport';
+import { applyVoucherToInvoice, getPromoCodeUsagesByInvoiceId } from '../services/promotionService';
 
 const statusLabel = (status: Invoice['status']) => {
   switch (status) {
@@ -92,6 +93,10 @@ export default function InvoiceManager() {
   const [pdfExporting, setPdfExporting] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailNote, setEmailNote] = useState<string | null>(null);
+  const [voucherCode, setVoucherCode] = useState('');
+  const [applyingVoucher, setApplyingVoucher] = useState(false);
+  const [voucherNote, setVoucherNote] = useState<string | null>(null);
+  const [voucherUsage, setVoucherUsage] = useState<string | null>(null);
   const pdfRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -128,6 +133,9 @@ export default function InvoiceManager() {
     let cancelled = false;
     setDetailLoading(true);
     setDetailError(null);
+    setVoucherCode('');
+    setVoucherNote(null);
+    setVoucherUsage(null);
     getInvoiceById(detailId)
       .then(d => {
         if (!cancelled) {
@@ -137,6 +145,13 @@ export default function InvoiceManager() {
       })
       .catch(err => { if (!cancelled) setDetailError(err?.message || 'Không thể tải chi tiết hóa đơn.'); })
       .finally(() => { if (!cancelled) setDetailLoading(false); });
+    getPromoCodeUsagesByInvoiceId(detailId)
+      .then(usages => {
+        if (!cancelled) {
+          setVoucherUsage(usages[0]?.promoCodeId || null);
+        }
+      })
+      .catch(() => { /* không chặn UI nếu usage lỗi */ });
     return () => { cancelled = true; };
   }, [detailOpen, detailId]);
 
@@ -178,6 +193,30 @@ export default function InvoiceManager() {
     setDetailOpen(false);
     setDetailId(null);
     setDetail(null);
+  };
+
+  const handleApplyVoucher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!detailId || !voucherCode.trim()) return;
+    setApplyingVoucher(true);
+    setVoucherNote(null);
+    try {
+      const result = await applyVoucherToInvoice({ invoiceId: detailId, code: voucherCode.trim() });
+      if (!result.success) {
+        setVoucherNote(`Không áp dụng được voucher: ${result.error || 'Lỗi không xác định'}`);
+        return;
+      }
+      setVoucherNote(`Đã áp dụng voucher ${result.code}: giảm ${result.discount?.toLocaleString('vi-VN')}đ`);
+      setVoucherCode('');
+      setVoucherUsage(result.promoCodeId || null);
+      const [refreshedDetail, refreshedList] = await Promise.all([getInvoiceById(detailId), getAllInvoices()]);
+      if (refreshedDetail) setDetail(refreshedDetail);
+      setInvoices(refreshedList);
+    } catch (err: any) {
+      setVoucherNote(`Áp dụng voucher thất bại: ${err?.message || 'Lỗi không xác định'}`);
+    } finally {
+      setApplyingVoucher(false);
+    }
   };
 
   const handleExportPdf = async () => {
@@ -429,6 +468,45 @@ export default function InvoiceManager() {
                       <p className="text-gray-600">Đã thanh toán: <span className="font-medium text-gray-900">{formatCurrency(selectedInvoice.amountPaid)}</span></p>
                       <p className="text-gray-600">Còn lại: <span className={`font-medium ${selectedInvoice.balance > 0 ? 'text-red-600' : 'text-gray-900'}`}>{formatCurrency(selectedInvoice.balance)}</span></p>
                     </div>
+                  </div>
+
+                  {/* Voucher */}
+                  <div className="border-t border-gray-100 pt-4">
+                    <div className="flex items-center gap-2 mb-2 text-gray-800 font-medium">
+                      <Tag className="w-4 h-4" />
+                      Voucher / khuyến mãi
+                    </div>
+                    {voucherUsage ? (
+                      <div className="text-sm text-green-700 bg-green-50 p-3 rounded-lg border border-green-100">
+                        Đã áp dụng voucher cho hóa đơn này.
+                      </div>
+                    ) : ['draft', 'pending'].includes(selectedInvoice.status) ? (
+                      <form onSubmit={handleApplyVoucher} className="flex flex-col sm:flex-row gap-2">
+                        <input
+                          type="text"
+                          value={voucherCode}
+                          onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                          placeholder="Nhập mã voucher"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          disabled={applyingVoucher}
+                        />
+                        <button
+                          type="submit"
+                          disabled={applyingVoucher || !voucherCode.trim()}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60 flex items-center gap-2"
+                        >
+                          <Tag className="w-4 h-4" />
+                          {applyingVoucher ? 'Đang áp dụng...' : 'Áp dụng'}
+                        </button>
+                      </form>
+                    ) : (
+                      <p className="text-sm text-gray-500 italic">Hóa đơn không thể áp dụng voucher ở trạng thái này.</p>
+                    )}
+                    {voucherNote && (
+                      <div className={`mt-2 text-sm p-3 rounded-lg border ${voucherNote.startsWith('Đã áp dụng') ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-red-700 border-red-100'}`}>
+                        {voucherNote}
+                      </div>
+                    )}
                   </div>
 
                   {/* Bank accounts */}

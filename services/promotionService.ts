@@ -254,6 +254,16 @@ export async function createPromoCodeUsage(input: {
   return mapPromoCodeUsageFromDB(data);
 }
 
+export async function getPromoCodeUsagesByInvoiceId(invoiceId: string): Promise<PromoCodeUsage[]> {
+  const { data, error } = await supabase
+    .from('promo_code_usages')
+    .select('*')
+    .eq('invoice_id', invoiceId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return (data || []).map(mapPromoCodeUsageFromDB);
+}
+
 export async function getPromoCodeUsageCounts(promoCodeId: string): Promise<PromoCodeUsageCounts> {
   const { data, error } = await supabase.rpc('get_promo_code_usage_counts', {
     p_promo_code_id: promoCodeId,
