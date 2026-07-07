@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS public.invoice_reminder_logs (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_invoice_reminder_logs_invoice_milestone
+CREATE UNIQUE INDEX IF NOT EXISTS idx_invoice_reminder_logs_invoice_milestone
   ON public.invoice_reminder_logs(invoice_id, milestone);
 
 CREATE INDEX IF NOT EXISTS idx_invoice_reminder_logs_due_date
@@ -31,19 +31,24 @@ CREATE INDEX IF NOT EXISTS idx_invoice_reminder_logs_due_date
 ALTER TABLE public.invoice_reminder_logs ENABLE ROW LEVEL SECURITY;
 
 -- Only system admins can read reminder logs.
-CREATE POLICY IF NOT EXISTS invoice_reminder_logs_select_admin
+DROP POLICY IF EXISTS invoice_reminder_logs_select_admin ON public.invoice_reminder_logs;
+CREATE POLICY invoice_reminder_logs_select_admin
   ON public.invoice_reminder_logs
   FOR SELECT
   TO authenticated
   USING (public.is_system_admin());
 
-CREATE POLICY IF NOT EXISTS invoice_reminder_logs_insert_service
+DROP POLICY IF EXISTS invoice_reminder_logs_insert_service ON public.invoice_reminder_logs;
+CREATE POLICY invoice_reminder_logs_insert_service
   ON public.invoice_reminder_logs
   FOR INSERT
   TO authenticated
   WITH CHECK (public.is_system_admin());
 
 REVOKE ALL ON public.invoice_reminder_logs FROM PUBLIC;
+
+-- Edge Function uses service_role to upsert reminder logs.
+GRANT SELECT, INSERT, UPDATE ON public.invoice_reminder_logs TO service_role;
 
 -- ============================================================
 -- 2. Config helpers
@@ -73,7 +78,7 @@ BEGIN
       'milestones', jsonb_build_array(7, 3, 1),
       'send_time', '09:00',
       'function_url', '',
-      'service_role_key', ''
+      'reminder_secret', ''
     );
   END IF;
 
@@ -82,13 +87,16 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.get_billing_reminder_config() FROM PUBLIC;
+-- P9.1.1: frontend Supabase client uses authenticated role; must grant EXECUTE after revoking PUBLIC.
+GRANT EXECUTE ON FUNCTION public.get_billing_reminder_config() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_billing_reminder_config() TO service_role;
 
 CREATE OR REPLACE FUNCTION public.set_billing_reminder_config(
   p_enabled BOOLEAN,
   p_milestones INT[],
   p_send_time TEXT DEFAULT '09:00',
   p_function_url TEXT DEFAULT '',
-  p_service_role_key TEXT DEFAULT ''
+  p_reminder_secret TEXT DEFAULT ''
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -111,7 +119,7 @@ BEGIN
     'milestones', to_jsonb(v_milestones),
     'send_time', COALESCE(p_send_time, '09:00'),
     'function_url', COALESCE(p_function_url, ''),
-    'service_role_key', COALESCE(p_service_role_key, '')
+    'reminder_secret', COALESCE(p_reminder_secret, '')
   );
 
   INSERT INTO public.system_settings (key, value)
@@ -196,14 +204,14 @@ DECLARE
 BEGIN
   v_config := public.get_billing_reminder_config();
   v_url := COALESCE(v_config->>'function_url', '');
-  v_key := COALESCE(v_config->>'service_role_key', '');
+  v_key := COALESCE(v_config->>'reminder_secret', '');
 
   IF NOT (v_config->>'enabled')::BOOLEAN THEN
     RETURN jsonb_build_object('sent', 0, 'skipped', 0, 'error', 'reminder disabled');
   END IF;
 
   IF v_url = '' OR v_key = '' THEN
-    RETURN jsonb_build_object('sent', 0, 'skipped', 0, 'error', 'function_url hoặc service_role_key chưa được cấu hình');
+    RETURN jsonb_build_object('sent', 0, 'skipped', 0, 'error', 'function_url hoặc reminder_secret chưa được cấu hình');
   END IF;
 
   FOR v_rec IN SELECT * FROM public.get_pending_billing_reminders()
@@ -225,8 +233,9 @@ BEGIN
         body := v_body,
         headers := jsonb_build_object(
           'Content-Type', 'application/json',
-          'Authorization', 'Bearer ' || v_key
-        )
+          'X-Internal-Secret', v_key
+        ),
+        timeout_milliseconds := 10000
       );
 
       v_sent := v_sent + 1;
@@ -243,6 +252,9 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.send_billing_reminders() FROM PUBLIC;
+-- P9.1.1: allow admin dashboard to trigger reminder send manually.
+GRANT EXECUTE ON FUNCTION public.send_billing_reminders() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.send_billing_reminders() TO service_role;
 
 -- ============================================================
 -- 5. Cron job

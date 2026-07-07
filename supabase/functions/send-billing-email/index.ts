@@ -6,7 +6,7 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-secret',
 };
 
 const jsonResponse = (data: unknown, status: number) =>
@@ -28,6 +28,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const reminderSecret = Deno.env.get('BILLING_REMINDERS_SECRET');
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     const resendFrom = Deno.env.get('RESEND_FROM') || 'VietSales Pro <billing@vietsalepro.com>';
 
@@ -35,38 +36,46 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Xác thực: chỉ system admin (hoặc service role gọi từ cron/backend).
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return jsonResponse({ error: 'Missing Authorization header' }, 401);
-    }
-    const token = authHeader.replace('Bearer ', '');
-    const isServiceRole = token === serviceRoleKey;
-    if (!isServiceRole) {
-      const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-      if (userError || !user) {
-        return jsonResponse({ error: 'Invalid token' }, 401);
+    // Xác thực: internal secret (cron/scheduler), service role, hoặc system admin.
+    const internalSecret = req.headers.get('X-Internal-Secret');
+    const isReminderSecret = !!reminderSecret && internalSecret === reminderSecret;
+    if (!isReminderSecret) {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return jsonResponse({ error: 'Missing Authorization header' }, 401);
       }
-      const { data: adminRow, error: adminError } = await supabaseAdmin
-        .from('system_admins')
-        .select('user_id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (adminError) throw adminError;
-      if (!adminRow) {
-        return jsonResponse({ error: 'Chỉ system admin được gửi email billing' }, 403);
+      const token = authHeader.replace('Bearer ', '');
+      const isServiceRole = token === serviceRoleKey;
+      if (!isServiceRole) {
+        const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+        if (userError || !user) {
+          return jsonResponse({ error: 'Invalid token' }, 401);
+        }
+        const { data: adminRow, error: adminError } = await supabaseAdmin
+          .from('system_admins')
+          .select('user_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (adminError) throw adminError;
+        if (!adminRow) {
+          return jsonResponse({ error: 'Chỉ system admin được gửi email billing' }, 403);
+        }
       }
     }
 
     const body = await req.json();
-    const { invoice_id, type, milestone } = body as { invoice_id?: string; type?: string; milestone?: string };
+    const { invoice_id, type } = body as { invoice_id?: string; type?: string };
     let to: string | undefined = body?.to;
+    const milestone: string | undefined = body?.milestone;
 
     if (!invoice_id || typeof invoice_id !== 'string') {
       return jsonResponse({ error: 'invoice_id không hợp lệ' }, 400);
     }
     if (type !== 'reminder' && type !== 'confirmation') {
       return jsonResponse({ error: 'type phải là reminder hoặc confirmation' }, 400);
+    }
+    if (type === 'reminder' && milestone && !['T-7', 'T-3', 'T-1'].includes(milestone)) {
+      return jsonResponse({ error: 'milestone phải là T-7, T-3 hoặc T-1' }, 400);
     }
 
     // Hóa đơn + tenant.
@@ -118,7 +127,8 @@ serve(async (req) => {
     let subject: string;
     let html: string;
     if (type === 'reminder') {
-      subject = `[${brand}] Nhắc thanh toán hóa đơn ${invoice.invoice_no}`;
+      const milestoneLabel = milestone ? ` (${escapeHtml(milestone)})` : '';
+      subject = `[${brand}] Nhắc thanh toán hóa đơn ${invoice.invoice_no}${milestoneLabel}`;
       html = `
         <div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;line-height:1.6">
           <p>Kính gửi cửa hàng <strong>${escapeHtml(tenant.name || '')}</strong>,</p>
@@ -161,19 +171,37 @@ serve(async (req) => {
     });
 
     const resendData = await resendResp.json().catch(() => ({}));
-    if (!resendResp.ok) {
-      return jsonResponse({ error: 'Gửi email thất bại', detail: resendData }, 502);
-    }
 
     // Ghi log reminder nếu scheduler gửi (P9.1).
     if (type === 'reminder' && milestone) {
-      await supabaseAdmin
-        .from('invoice_reminder_logs')
-        .upsert(
-          { invoice_id, milestone, status: 'sent', sent_at: new Date().toISOString() },
-          { onConflict: 'invoice_id, milestone' }
-        )
-        .catch(() => { /* best-effort: không làm fail email */ });
+      const logPayload = !resendResp.ok
+        ? {
+            invoice_id,
+            milestone,
+            due_date: invoice.due_date,
+            status: 'failed',
+            error: JSON.stringify(resendData),
+            sent_at: new Date().toISOString(),
+          }
+        : {
+            invoice_id,
+            milestone,
+            due_date: invoice.due_date,
+            status: 'sent',
+            error: null,
+            sent_at: new Date().toISOString(),
+          };
+      try {
+        await supabaseAdmin
+          .from('invoice_reminder_logs')
+          .upsert(logPayload, { onConflict: 'invoice_id, milestone' });
+      } catch {
+        /* best-effort: không làm fail email */
+      }
+    }
+
+    if (!resendResp.ok) {
+      return jsonResponse({ error: 'Gửi email thất bại', detail: resendData }, 502);
     }
 
     return jsonResponse({ success: true, id: resendData?.id ?? null, to, type }, 200);

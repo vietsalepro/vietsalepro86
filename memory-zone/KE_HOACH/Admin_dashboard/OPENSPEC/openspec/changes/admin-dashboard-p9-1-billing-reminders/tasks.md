@@ -15,7 +15,7 @@
 - [x] 2.1 Run `npm run lint`
 - [x] 2.2 Run `npm run build` if this sub-phase touches code
 - [x] 2.3 Manual test the acceptance criteria
-- [ ] 2.4 Deploy and test migration on Supabase if applicable
+- [x] 2.4 Deploy and test migration on Supabase
 
 ## Acceptance Criteria
 
@@ -27,3 +27,17 @@
 
 - Backup: `C:\Users\SUACAUBA\Downloads\Project\vietsale-pro-v7_backup_admin_dashboard_admin-dashboard-p9-1-billing-reminders_<YYYYMMDD_HHMMSS>`
 - Rollback trigger: build/test fails, acceptance criteria fails, or data loss risk.
+
+## Security Refactor (post-deploy)
+
+- [x] Replace service role key with custom `BILLING_REMINDERS_SECRET`.
+- [x] Update SQL scheduler to send `X-Internal-Secret` header.
+- [x] Update Edge Function to authenticate cron requests via `X-Internal-Secret`.
+- [x] Set `verify_jwt = false` for `send-billing-email` in `supabase/config.toml`.
+- [x] Set `BILLING_REMINDERS_SECRET` in Supabase secrets.
+- [x] Update `billing_reminder_config` in Supabase to use `reminder_secret`.
+- [x] Re-apply delta SQL to Supabase with new header.
+- [x] Redeploy Edge Function.
+- [x] End-to-end verify on Supabase (log updated to failed/sent correctly).
+- [x] Update `invoice_reminder_logs` unique index + service_role grants.
+- [x] Run `npm run lint`, `npm run build`, `npx vitest run`.

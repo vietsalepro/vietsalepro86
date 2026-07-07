@@ -6,11 +6,12 @@ import {
 } from '../types/billing';
 
 const mapConfigFromDB = (value: any): BillingReminderConfig => ({
+
   enabled: value?.enabled ?? true,
   milestones: [...new Set((value?.milestones ?? [7, 3, 1]) as number[])].sort((a, b) => a - b),
   sendTime: value?.send_time ?? '09:00',
   functionUrl: value?.function_url ?? '',
-  serviceRoleKey: value?.service_role_key ?? '',
+  reminderSecret: value?.reminder_secret ?? '',
 });
 
 const mapLogFromDB = (row: any): BillingReminderLog => ({
@@ -44,7 +45,7 @@ export async function setBillingReminderConfig(
     p_milestones: config.milestones,
     p_send_time: config.sendTime,
     p_function_url: config.functionUrl,
-    p_service_role_key: config.serviceRoleKey,
+    p_reminder_secret: config.reminderSecret,
   });
   if (error) throw error;
   return mapConfigFromDB(data);

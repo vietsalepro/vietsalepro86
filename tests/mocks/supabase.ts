@@ -8,6 +8,7 @@ type Row = Record<string, any>;
 let currentUserId: string | null = null;
 let currentTenantId: string | null = null;
 let isSystemAdmin = false;
+let simulateBillingReminderFailure = false;
 
 const store: Record<string, Row[]> = {
   tenants: [],
@@ -60,6 +61,7 @@ export const requireTenantId = (): string => {
   return currentTenantId;
 };
 export const setSystemAdmin = (value: boolean) => { isSystemAdmin = value; };
+export const setBillingReminderFailure = (value: boolean) => { simulateBillingReminderFailure = value; };
 export const getMockRows = (table: string) => store[table] ?? [];
 export const addMockRow = (table: string, row: Row) => { store[table].push(row); };
 
@@ -1018,7 +1020,7 @@ const rpc = async (name: string, params: Record<string, any>) => {
       milestones: [7, 3, 1],
       send_time: '09:00',
       function_url: '',
-      service_role_key: '',
+      reminder_secret: '',
     };
     return { data: config, error: null };
   }
@@ -1037,7 +1039,7 @@ const rpc = async (name: string, params: Record<string, any>) => {
       milestones,
       send_time: params.p_send_time ?? '09:00',
       function_url: params.p_function_url ?? '',
-      service_role_key: params.p_service_role_key ?? '',
+      reminder_secret: params.p_reminder_secret ?? '',
     };
     setSetting('billing_reminder_config', config);
     return { data: config, error: null };
@@ -1076,8 +1078,8 @@ const rpc = async (name: string, params: Record<string, any>) => {
     if (!config.enabled) {
       return { data: { sent: 0, skipped: 0, error: 'reminder disabled' }, error: null };
     }
-    if (!config.function_url || !config.service_role_key) {
-      return { data: { sent: 0, skipped: 0, error: 'function_url hoặc service_role_key chưa được cấu hình' }, error: null };
+    if (!config.function_url || !config.reminder_secret) {
+      return { data: { sent: 0, skipped: 0, error: 'function_url hoặc reminder_secret chưa được cấu hình' }, error: null };
     }
     const today = new Date().toISOString().slice(0, 10);
     let sent = 0;
@@ -1093,16 +1095,23 @@ const rpc = async (name: string, params: Record<string, any>) => {
         return !logged;
       });
       for (const invoice of pending) {
-        store.invoice_reminder_logs.push({
-          id: uuid(),
-          invoice_id: invoice.id,
-          milestone: `T-${days}`,
-          due_date: invoice.due_date,
-          sent_at: new Date().toISOString(),
-          status: 'pending',
-          created_at: new Date().toISOString(),
-        });
-        sent += 1;
+        try {
+          if (simulateBillingReminderFailure) {
+            throw new Error('simulated billing reminder failure');
+          }
+          store.invoice_reminder_logs.push({
+            id: uuid(),
+            invoice_id: invoice.id,
+            milestone: `T-${days}`,
+            due_date: invoice.due_date,
+            sent_at: new Date().toISOString(),
+            status: 'pending',
+            created_at: new Date().toISOString(),
+          });
+          sent += 1;
+        } catch {
+          skipped += 1;
+        }
       }
     }
     return { data: { sent, skipped, error: null }, error: null };

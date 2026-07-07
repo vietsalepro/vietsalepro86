@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { resetMockData, setCurrentUserId, setSystemAdmin } from '../mocks/supabase';
+import { resetMockData, setCurrentUserId, setSystemAdmin, setBillingReminderFailure } from '../mocks/supabase';
 
 vi.mock('../../lib/supabase', async () => {
   const { mockSupabase } = await import('../mocks/supabase');
@@ -37,7 +37,7 @@ describe('smoke: admin dashboard P9.1 billing reminders', () => {
       milestones: [3, 1],
       sendTime: '08:00',
       functionUrl: 'https://example.com/functions/v1/send-billing-email',
-      serviceRoleKey: 'test-key',
+      reminderSecret: 'test-key',
     });
     expect(config.milestones).toEqual([1, 3]);
     expect(config.sendTime).toBe('08:00');
@@ -49,7 +49,17 @@ describe('smoke: admin dashboard P9.1 billing reminders', () => {
       milestones: [-1],
       sendTime: '09:00',
       functionUrl: '',
-      serviceRoleKey: '',
+      reminderSecret: '',
+    })).rejects.toThrow();
+  });
+
+  it('từ chối nếu milestones là mảng rỗng', async () => {
+    await expect(setBillingReminderConfig({
+      enabled: true,
+      milestones: [],
+      sendTime: '09:00',
+      functionUrl: '',
+      reminderSecret: '',
     })).rejects.toThrow();
   });
 
@@ -75,7 +85,7 @@ describe('smoke: admin dashboard P9.1 billing reminders', () => {
       milestones: [7],
       sendTime: '09:00',
       functionUrl: 'https://example.com/functions/v1/send-billing-email',
-      serviceRoleKey: 'test-key',
+      reminderSecret: 'test-key',
     });
 
     const pending = await getPendingBillingReminders();
@@ -104,7 +114,7 @@ describe('smoke: admin dashboard P9.1 billing reminders', () => {
       milestones: [3],
       sendTime: '09:00',
       functionUrl: 'https://example.com/functions/v1/send-billing-email',
-      serviceRoleKey: 'test-key',
+      reminderSecret: 'test-key',
     });
 
     const res = await sendBillingReminders();
@@ -115,6 +125,38 @@ describe('smoke: admin dashboard P9.1 billing reminders', () => {
     expect(logs.length).toBe(1);
     expect(logs[0].milestone).toBe('T-3');
     expect(logs[0].invoice_id).toBe(invoice.id);
+  });
+
+  it('đếm skipped khi gửi reminder lỗi', async () => {
+    const tenant = await createTenantWithAdmin({ name: 'Shop Skip', subdomain: 'shop-skip' });
+    const dueDate = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+    const invoice = await createInvoice({
+      tenantId: tenant.id,
+      cycleType: 'monthly',
+      quantity: 1,
+      bonusMonths: 0,
+    });
+    const { getMockRows } = await import('../mocks/supabase');
+    const invoices = getMockRows('invoices') as any[];
+    const row = invoices.find(i => i.id === invoice.id);
+    if (row) row.due_date = dueDate;
+
+    await setBillingReminderConfig({
+      enabled: true,
+      milestones: [1],
+      sendTime: '09:00',
+      functionUrl: 'https://example.com/functions/v1/send-billing-email',
+      reminderSecret: 'test-key',
+    });
+
+    setBillingReminderFailure(true);
+    const res = await sendBillingReminders();
+    setBillingReminderFailure(false);
+
+    expect(res.sent).toBe(0);
+    expect(res.skipped).toBe(1);
+    expect(res.error).toBeFalsy();
   });
 
   it('không gửi trùng reminder cho cùng mốc', async () => {
@@ -137,7 +179,7 @@ describe('smoke: admin dashboard P9.1 billing reminders', () => {
       milestones: [1],
       sendTime: '09:00',
       functionUrl: 'https://example.com/functions/v1/send-billing-email',
-      serviceRoleKey: 'test-key',
+      reminderSecret: 'test-key',
     });
 
     await sendBillingReminders();
@@ -151,7 +193,7 @@ describe('smoke: admin dashboard P9.1 billing reminders', () => {
       milestones: [7, 3, 1],
       sendTime: '09:00',
       functionUrl: 'https://example.com/functions/v1/send-billing-email',
-      serviceRoleKey: 'test-key',
+      reminderSecret: 'test-key',
     });
 
     const pending = await getPendingBillingReminders();

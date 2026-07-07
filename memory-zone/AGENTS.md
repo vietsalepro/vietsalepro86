@@ -1153,6 +1153,15 @@ User explicitly instructed: only push the multi-tenancy branch to the remote/pro
 - Service layer: `services/billingReminderService.ts`; types `BillingReminderConfig`, `BillingReminderLog`, `PendingReminder` trong `types/billing.ts`.
 - Smoke test: `tests/smoke/admin-dashboard-p9-1-billing-reminders.test.ts` (7 tests).
 - Backup: `C:\Users\SUACAUBA\Downloads\Project\vietsale-pro-v7_backup_admin_dashboard_admin-dashboard-p9-1-billing-reminders_20260707_070139`.
-- `npm run lint` PASS · `npm run build` PASS · `npx vitest run tests/smoke` 84/84 PASS.
-- Deploy Supabase TODO: apply migration, set `billing_reminder_config` trong `system_settings` với `function_url` và `service_role_key`.
+- `npm run lint` PASS · `npm run build` PASS · `npx vitest run` 97/97 PASS.
+- Deployed Supabase project `rsialbfjswnrkzcxarnj` (QLBH):
+  - Migration `20250707000000_phase_p9_1_billing_reminders.sql` applied.
+  - Edge Function `send-billing-email` redeployed với `verify_jwt = false`.
+  - Config `billing_reminder_config` set trong `system_settings` với `function_url` và `reminder_secret` (custom secret).
+  - Secret `BILLING_REMINDERS_SECRET` set trong Supabase secrets.
+  - Cron job `billing-reminders-daily` created.
+  - End-to-end test: scheduler đúng T-7, gọi Edge Function thành công, log reminder ghi `failed` với lỗi Resend 403 domain chưa verify.
+  - Bảo mật: cron dùng header `X-Internal-Secret` thay vì `Authorization: Bearer service_role_key`.
+- Backup: `C:\Users\SUACAUBA\Downloads\Project\vietsale-pro-v7_backup_admin_dashboard_p9_1_secure_reminders_20260707_082248`.
+- Cần verify domain trên Resend để email thực sự gửi được.
 

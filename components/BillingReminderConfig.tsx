@@ -21,7 +21,7 @@ export default function BillingReminderConfig() {
     milestones: DEFAULT_MILESTONES,
     sendTime: '09:00',
     functionUrl: '',
-    serviceRoleKey: '',
+    reminderSecret: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -188,12 +188,12 @@ export default function BillingReminderConfig() {
               </p>
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Service role key (dùng cho cron)</label>
+              <label className="block text-sm text-gray-600 mb-1">Internal Secret (Billing Reminders)</label>
               <input
                 type="password"
-                value={config.serviceRoleKey}
-                onChange={(e) => setConfig(prev => ({ ...prev, serviceRoleKey: e.target.value }))}
-                placeholder="eyJhbGciOiJIUzI1NiIs..."
+                value={config.reminderSecret}
+                onChange={(e) => setConfig(prev => ({ ...prev, reminderSecret: e.target.value }))}
+                placeholder="secret-danh-cho-cron"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500 mt-1">

@@ -118,7 +118,7 @@ export interface BillingReminderConfig {
   milestones: number[];
   sendTime: string;
   functionUrl: string;
-  serviceRoleKey: string;
+  reminderSecret: string;
 }
 
 export interface BillingReminderLog {
