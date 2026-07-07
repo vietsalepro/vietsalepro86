@@ -1,12 +1,14 @@
 ## What Was Done
 
-- Completed P12 2 Email Templates.
+- Completed P10 3 Voucher Ui Expiry.
 
 ## What Was Verified
 
 - [x] `npm run lint` pass
 - [x] `npm run build` pass
 - [x] Manual acceptance criteria tested
+- [x] `npx vitest run` pass (110 tests)
+- [x] `openspec validate --all` pass (39/39)
 
 ## Next Phase
 
@@ -18,4 +20,4 @@
 
 ## Backup Location
 
-- `C:\Users\SUACAUBA\Downloads\Project\vietsale-pro-v7_backup_admin_dashboard_admin-dashboard-p12-2-email-templates_<YYYYMMDD_HHMMSS>`
+- `C:\Users\SUACAUBA\Downloads\Project\vietsale-pro-v7_backup_admin_dashboard_admin-dashboard-p10-3-voucher-ui-expiry_<YYYYMMDD_HHMMSS>`

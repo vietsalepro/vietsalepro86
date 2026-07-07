@@ -14,7 +14,7 @@
 
 ## Acceptance Criteria
 
-- [x] P12.2 — Email templates + composer: logo, brand color, signature.
+- [x] P10.3 — Voucher management UI + expiry warnings + tenant voucher input.
 - [x] `npm run lint` pass.
 - [x] `npm run build` pass (if code changed).
 
@@ -23,3 +23,5 @@
 - [x] Run `npm run lint`.
 - [x] Run `npm run build`.
 - [x] Manual test the acceptance criteria.
+- [x] Run `npx vitest run` (110 tests pass).
+- [x] Run `openspec validate --all` (39/39 pass).

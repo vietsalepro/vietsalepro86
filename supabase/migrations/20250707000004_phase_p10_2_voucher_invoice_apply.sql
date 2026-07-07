@@ -322,3 +322,15 @@ BEGIN
   );
 END;
 $$;
+
+-- ============================================================
+-- 5. Lockdown EXECUTE permissions on RPC helpers
+-- ============================================================
+
+REVOKE ALL ON FUNCTION public.promotion_rule_matches(UUID, UUID, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.promotion_rule_matches(UUID, UUID, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.promotion_rule_matches(UUID, UUID, TEXT) TO service_role;
+
+REVOKE ALL ON FUNCTION public.apply_voucher_to_invoice(UUID, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.apply_voucher_to_invoice(UUID, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.apply_voucher_to_invoice(UUID, TEXT) TO service_role;

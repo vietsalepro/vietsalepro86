@@ -239,3 +239,15 @@ BEGIN
   );
 END;
 $$;
+
+-- ============================================================
+-- 6. Lockdown EXECUTE permissions on RPC helpers
+-- ============================================================
+
+REVOKE ALL ON FUNCTION public.get_promo_code_usage_counts(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_promo_code_usage_counts(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_promo_code_usage_counts(UUID) TO service_role;
+
+REVOKE ALL ON FUNCTION public.validate_promo_code(TEXT, UUID, NUMERIC) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.validate_promo_code(TEXT, UUID, NUMERIC) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.validate_promo_code(TEXT, UUID, NUMERIC) TO service_role;

@@ -6,7 +6,7 @@
 
 ## Tiến độ hiện tại (cập nhật 2026-07-07)
 
-Đã triển khai **hoàn tất tới P9.1.2** (Giai đoạn 1 FOUNDATION + Giai đoạn 2 BILLING tới reminders). Xác minh: `npm run lint` PASS, `npm run build` PASS, `npx vitest run` PASS **99/99 test** (19 file).
+Đã triển khai **hoàn tất tới P12.2** (Giai đoạn 1 FOUNDATION + Giai đoạn 2 BILLING + Giai đoạn 3 VOUCHER/PROMOTION + Giai đoạn 4 SUPPORT + Giai đoạn 5 ANNOUNCEMENTS/EMAIL). Xác minh: `npm run lint` PASS, `npm run build` PASS, `npx vitest run` PASS **135/135 test** (26 file).
 
 | Sub-phase | Trạng thái code | Migration SQL | Ghi chú |
 |-----------|-----------------|---------------|---------|
@@ -28,6 +28,14 @@
 | P9.1.1 | ✅ Done | (grants + mock skipped counter) | **Đã archive** (`archive/2026-07-07-...p9-1-1-billing-reminders-fix`) |
 | P9.1.2 | ✅ Done | `20250707000001_phase_p9_1_1_billing_reminders_fix.sql` (GRANT EXECUTE cho `set_billing_reminder_config` + `get_pending_billing_reminders`, reject mảng `[]` rỗng) | **Đã archive** (`archive/2026-07-07-...p9-1-2-billing-reminders-fix`); delta SQL đã deploy trên Supabase project `rsialbfjswnrkzcxarnj` |
 | P9.2 | ✅ Done | `20250707000002_phase_p9_2_billing_automation_dashboard.sql` | Dashboard trạng thái billing + job log; đã deploy trên Supabase project `rsialbfjswnrkzcxarnj`; **đã archive** (`archive/2026-07-07-admin-dashboard-p9-2-automation-dashboard`) |
+| P10.1 | ✅ Done | `20250707000003_phase_p10_1_voucher_promotion_schema.sql` | `promo_codes`, `promotion_rules`, `promo_code_usages` + RPC `get_promo_code_usage_counts`, `validate_promo_code`; đã bổ sung GRANT/REVOKE EXECUTE; đã deploy và repair history trên Supabase project `rsialbfjswnrkzcxarnj`; **đã archive** (`archive/2026-07-07-admin-dashboard-p10-1-voucher-promotion-schema`) |
+| P10.2 | ✅ Done | `20250707000004_phase_p10_2_voucher_invoice_apply.sql` | RPC `apply_voucher_to_invoice` + `promotion_rule_matches`; đã bổ sung GRANT/REVOKE EXECUTE; đã deploy và repair history trên Supabase project `rsialbfjswnrkzcxarnj`; **đã archive** (`archive/2026-07-07-admin-dashboard-p10-2-voucher-invoice-apply`) |
+| P10.3 | ✅ Done | — | UI expiry/validation + `services/promotionService.ts`; **đã archive** (`archive/2026-07-07-admin-dashboard-p10-3-voucher-ui-expiry`) |
+| P11.1 | ✅ Done | `20250707000005_phase_p11_1_ticket_schema_backend.sql` | Tickets + replies + categories; **đã archive** (`archive/2026-07-07-admin-dashboard-p11-1-ticket-schema-backend`) |
+| P11.2 | ✅ Done | — | Ticket inbox UI + reply + templates + email notifications via Resend; **đã archive** (`archive/2026-07-07-admin-dashboard-p11-2-ticket-inbox-email`) |
+| P11.3 | ✅ Done | `20250707000006_phase_p11_3_impersonation.sql` | Impersonation "Login as tenant admin"; **đã archive** (`archive/2026-07-07-admin-dashboard-p11-3-impersonation`) |
+| P12.1 | ✅ Done | `20250707000007_phase_p12_1_announcements.sql` | Announcements backend table + scheduling + in-app display; **đã archive** (`archive/2026-07-07-admin-dashboard-p12-1-announcements`) |
+| P12.2 | ✅ Done | `20250707000008_phase_p12_2_email_templates.sql` | Email templates + composer (logo, brand color, signature); **đã archive** (`archive/2026-07-07-admin-dashboard-p12-2-email-templates`) |
 
 **Việc còn tồn (không phải lỗi code):**
 - Task `2.4 Deploy migration on Supabase` bị bỏ trống ở nhiều change (P1/P2/P6/P7.1…) — code SSOT đã đúng, chỉ chờ phiên có CLI/credentials xác nhận đã apply.
