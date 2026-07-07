@@ -108,10 +108,10 @@ DECLARE
   v_value JSONB;
   v_milestones INT[];
 BEGIN
-  -- Validate milestones: positive days, deduplicate, sorted.
+  -- Validate milestones: positive days, deduplicate, sorted, non-empty.
   v_milestones := ARRAY(SELECT DISTINCT unnest(p_milestones) ORDER BY 1);
-  IF array_length(v_milestones, 1) IS NULL OR EXISTS (SELECT 1 FROM unnest(v_milestones) x WHERE x <= 0) THEN
-    RAISE EXCEPTION 'milestones phải là mảng số nguyên dương';
+  IF array_length(v_milestones, 1) IS NULL OR array_length(v_milestones, 1) = 0 OR EXISTS (SELECT 1 FROM unnest(v_milestones) x WHERE x <= 0) THEN
+    RAISE EXCEPTION 'milestones phải là mảng số nguyên dương không rỗng';
   END IF;
 
   v_value := jsonb_build_object(
@@ -131,6 +131,9 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.set_billing_reminder_config(BOOLEAN, INT[], TEXT, TEXT, TEXT) FROM PUBLIC;
+-- P9.1.2: allow authenticated admin dashboard to update reminder config.
+GRANT EXECUTE ON FUNCTION public.set_billing_reminder_config(BOOLEAN, INT[], TEXT, TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.set_billing_reminder_config(BOOLEAN, INT[], TEXT, TEXT, TEXT) TO service_role;
 
 -- ============================================================
 -- 3. Scheduler: list pending reminders
@@ -182,6 +185,9 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.get_pending_billing_reminders() FROM PUBLIC;
+-- P9.1.2: allow authenticated admin dashboard to list pending reminders.
+GRANT EXECUTE ON FUNCTION public.get_pending_billing_reminders() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_pending_billing_reminders() TO service_role;
 
 -- ============================================================
 -- 4. Scheduler: send reminders (async via pg_net -> send-billing-email)

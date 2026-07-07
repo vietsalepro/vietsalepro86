@@ -1031,7 +1031,7 @@ const rpc = async (name: string, params: Record<string, any>) => {
     }
     const inputMilestones: number[] = params.p_milestones ?? [];
     if (inputMilestones.length === 0 || inputMilestones.some((x: number) => x <= 0)) {
-      return { data: null, error: { code: '23514', message: 'milestones phải là mảng số nguyên dương' } };
+      return { data: null, error: { code: '23514', message: 'milestones phải là mảng số nguyên dương không rỗng' } };
     }
     const milestones: number[] = [...new Set(inputMilestones)].sort((a, b) => a - b);
     const config = {

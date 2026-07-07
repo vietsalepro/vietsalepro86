@@ -1163,5 +1163,7 @@ User explicitly instructed: only push the multi-tenancy branch to the remote/pro
   - End-to-end test: scheduler đúng T-7, gọi Edge Function thành công, log reminder ghi `failed` với lỗi Resend 403 domain chưa verify.
   - Bảo mật: cron dùng header `X-Internal-Secret` thay vì `Authorization: Bearer service_role_key`.
 - Backup: `C:\Users\SUACAUBA\Downloads\Project\vietsale-pro-v7_backup_admin_dashboard_p9_1_secure_reminders_20260707_082248`.
-- Cần verify domain trên Resend để email thực sự gửi được.
+- Domain `mail.vietsalepro.com` đã được verify trên Resend; `RESEND_FROM` cập nhật thành `VietSales Pro <billing@mail.vietsalepro.com>`.
+- End-to-end test (2026-07-07): `send_billing_reminders()` gửi T-7 thành công, `invoice_reminder_logs` ghi `status = 'sent'`.
+- Backup: `C:\Users\SUACAUBA\Downloads\Project\vietsale-pro-v7_backup_p9_1_1_mail_domain_setup_20260707_093000`.
 
