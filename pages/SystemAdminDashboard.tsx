@@ -1949,7 +1949,7 @@ export default function SystemAdminDashboard() {
                   />
                 </div>
               </div>
-: {(() => {
+              {(() => {
                 const proration = subTenant ? calculateProration(subTenant.plan, subForm.plan, subForm.expiresAt) : null;
                 return proration ? (
                   <div className="p-4 rounded-lg border border-indigo-100 bg-indigo-50 space-y-1 text-sm">
