@@ -4,6 +4,34 @@
 > Schema: `admin-dashboard`
 > Source plan: `memory-zone/KE_HOACH/Admin_dashboard/KE_HOACH_ADMIN_DASHBOARD_SUB_PHASE.md`
 
+## Tiến độ hiện tại (cập nhật 2026-07-07)
+
+Đã triển khai **hoàn tất tới P9.1.2** (Giai đoạn 1 FOUNDATION + Giai đoạn 2 BILLING tới reminders). Xác minh: `npm run lint` PASS, `npm run build` PASS, `npx vitest run` PASS **99/99 test** (19 file).
+
+| Sub-phase | Trạng thái code | Migration SQL | Ghi chú |
+|-----------|-----------------|---------------|---------|
+| P1 | ✅ Done | `20250706000000_phase_p1_...` | Chỉ còn task "deploy migration Supabase" (2.4) để lại cho phiên có credentials |
+| P2 | ✅ Done | (RPC usage/subscription) | 2.4 deploy pending |
+| P3 | ✅ Done | — | Dùng lại Edge Function invite-member/reset-password |
+| P4 | ✅ Done | (RPC analytics) | |
+| P5 | ✅ Done | — | **Đã archive** (`archive/2026-07-06-...p5-audit-security`) |
+| P6 | ✅ Done | (RPC operations) | 2.4 deploy pending |
+| P7.0 | ✅ Done | `20250706000006_phase_p7_0_read_only_tenant_infra.sql` | |
+| P7.1 | ✅ Done | `20250706000007_phase_p7_1_billing_schema_bank_config.sql` | 2.4 deploy pending |
+| P7.2 | ✅ Done | (RPC invoice create/pricing) | |
+| P7.3 | ✅ Done | `20250706000009_phase_p7_3_payment_confirm_lifecycle.sql` (thêm `'expired'` vào CHECK) | **Đã archive** |
+| P7.4 | ✅ Done | — (UI + PDF client-side) | |
+| P7.5 | ✅ Done | `20250706000010_phase_p7_5_expiry_renewal_cron.sql` + Edge Function `send-billing-email` | Migration + Edge Function **đã deploy**; `RESEND_API_KEY`/domain đã set (xem `HANDOFF_P9_1_2.md`) |
+| P8.1 | ✅ Done | `20250706000011_phase_p8_1_plan_builder_schema.sql` | YAGNI (đã làm) |
+| P8.2 | ✅ Done | (feature flags trên tenants.settings) | YAGNI (đã làm) |
+| P9.1 | ✅ Done | `20250707000000_phase_p9_1_billing_reminders.sql` | Reminders T-7/T-3/T-1 + cron + Edge Function |
+| P9.1.1 | ✅ Done | (grants + mock skipped counter) | **Đã archive** (`archive/2026-07-07-...p9-1-1-billing-reminders-fix`) |
+| P9.1.2 | ✅ Done | `20250707000001_phase_p9_1_1_billing_reminders_fix.sql` (GRANT EXECUTE cho `set_billing_reminder_config` + `get_pending_billing_reminders`, reject mảng `[]` rỗng) | **Đã archive** (`archive/2026-07-07-...p9-1-2-billing-reminders-fix`); delta SQL đã deploy trên Supabase project `rsialbfjswnrkzcxarnj` |
+| P9.2 | ⛔ Chưa làm | — | Ngoài phạm vi "tới P9.1"; tiếp theo mới làm |
+
+**Việc còn tồn (không phải lỗi code):**
+- Task `2.4 Deploy migration on Supabase` bị bỏ trống ở nhiều change (P1/P2/P6/P7.1…) — code SSOT đã đúng, chỉ chờ phiên có CLI/credentials xác nhận đã apply.
+
 ## Cấu trúc OpenSpec cho plan này
 
 ```text
@@ -38,7 +66,9 @@ OPENSPEC/openspec/
     ├── admin-dashboard-p8-1-plan-builder-schema/           # P8.1 (YAGNI)
     ├── admin-dashboard-p8-2-feature-flags/                 # P8.2 (YAGNI)
     ├── admin-dashboard-p9-1-billing-reminders/             # P9.1
-    ├── admin-dashboard-p9-2-automation-dashboard/          # P9.2
+    ├── admin-dashboard-p9-1-2-billing-reminders-fix/       # P9.1.2 (fix — code đã có, chưa archive)
+    ├── admin-dashboard-p9-2-automation-dashboard/          # P9.2 (chưa làm)
+    │   # (P9.1.1 đã archive → changes/archive/2026-07-07-admin-dashboard-p9-1-1-billing-reminders-fix)
     ├── admin-dashboard-p10-1-voucher-promotion-schema/       # P10.1
     ├── admin-dashboard-p10-2-voucher-invoice-apply/        # P10.2
     ├── admin-dashboard-p10-3-voucher-ui-expiry/              # P10.3
