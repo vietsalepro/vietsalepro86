@@ -828,5 +828,3 @@ BEGIN
   RETURN v_created;
 END;
 $$;
-$$;
-$$;
