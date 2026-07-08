@@ -76,6 +76,7 @@ import {
   getSystemAdmins,
   addSystemAdmin,
   removeSystemAdmin,
+  createSystemAdmin,
 } from '../services/systemAdminService';
 import {
   AdminLoginHistoryEntry,
@@ -348,7 +349,8 @@ export default function SystemAdminDashboard() {
   const [rateLimitLoading, setRateLimitLoading] = useState(false);
   const [systemAdmins, setSystemAdmins] = useState<SystemAdmin[]>([]);
   const [systemAdminsLoading, setSystemAdminsLoading] = useState(false);
-  const [newAdminUserId, setNewAdminUserId] = useState('');
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [newAdminPassword, setNewAdminPassword] = useState('');
   const [systemAdminSubmitting, setSystemAdminSubmitting] = useState(false);
 
   const [loginHistory, setLoginHistory] = useState<AdminLoginHistoryEntry[]>([]);
@@ -887,12 +889,27 @@ export default function SystemAdminDashboard() {
 
   const handleAddSystemAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAdminUserId.trim()) return;
+    
+    // Validate email format
+    const email = newAdminEmail.trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+      setError('Email không hợp lệ.');
+      return;
+    }
+    
+    // Validate password length
+    const password = newAdminPassword.trim();
+    if (!password || password.length < 6) {
+      setError('Password phải có ít nhất 6 ký tự.');
+      return;
+    }
+    
     setSystemAdminSubmitting(true);
     setError(null);
     try {
-      await addSystemAdmin(newAdminUserId.trim());
-      setNewAdminUserId('');
+      await createSystemAdmin(email, password);
+      setNewAdminEmail('');
+      setNewAdminPassword('');
       await loadSystemAdmins();
     } catch (err: any) {
       setError(err?.message || 'Thêm system admin thất bại.');
@@ -1899,25 +1916,41 @@ export default function SystemAdminDashboard() {
       <div className="space-y-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Thêm system admin</h2>
-          <form onSubmit={handleAddSystemAdmin} className="flex flex-col md:flex-row gap-4 items-end">
-            <div className="w-full md:w-1/2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">User ID</label>
-              <input
-                type="text"
-                value={newAdminUserId}
-                onChange={(e) => setNewAdminUserId(e.target.value)}
-                placeholder="UUID của user"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
+          <form onSubmit={handleAddSystemAdmin} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={newAdminEmail}
+                  onChange={(e) => setNewAdminEmail(e.target.value)}
+                  placeholder="admin@example.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input
+                  type="password"
+                  value={newAdminPassword}
+                  onChange={(e) => setNewAdminPassword(e.target.value)}
+                  placeholder="Tối thiểu 6 ký tự"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  minLength={6}
+                />
+              </div>
             </div>
-            <button
-              type="submit"
-              disabled={systemAdminSubmitting}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60"
-            >
-              {systemAdminSubmitting ? 'Đang thêm...' : 'Thêm'}
-            </button>
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={systemAdminSubmitting}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60"
+              >
+                {systemAdminSubmitting ? 'Đang thêm...' : 'Thêm'}
+              </button>
+            </div>
           </form>
         </div>
 
