@@ -324,3 +324,20 @@ export interface BulkUpdateTenantsResult {
   updatedIds: string[];
   skippedIds: string[];
 }
+
+// P15.1: API platform keys
+export interface TenantApiKey {
+  id: string;
+  tenantId: string;
+  name: string;
+  apiKey?: string;
+  apiKeyPreview?: string;
+  version: number;
+  status: 'active' | 'revoked';
+  createdBy?: string;
+  revokedAt?: string;
+  revokedBy?: string;
+  lastUsedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -18,6 +18,7 @@ import SystemHealthPanel from '../components/SystemHealthPanel';
 import ErrorPerformancePanel from '../components/ErrorPerformancePanel';
 import StorageBackupPanel from '../components/StorageBackupPanel';
 import BulkMaintenancePanel from '../components/BulkMaintenancePanel';
+import ApiKeyManager from '../components/ApiKeyManager';
 import './Dashboard.css';
 import {
   Tenant,
@@ -299,7 +300,7 @@ export default function SystemAdminDashboard() {
   const [featureLoading, setFeatureLoading] = useState(false);
   const [featureSubmitting, setFeatureSubmitting] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'tenants' | 'members' | 'audit' | 'rateLimit' | 'systemAdmins' | 'operations' | 'billing' | 'vouchers' | 'tickets' | 'emails' | 'notifications' | 'health' | 'errors' | 'storage' | 'bulkMaintenance'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'tenants' | 'members' | 'audit' | 'rateLimit' | 'systemAdmins' | 'operations' | 'billing' | 'vouchers' | 'tickets' | 'emails' | 'notifications' | 'health' | 'errors' | 'storage' | 'bulkMaintenance' | 'apiKeys'>('overview');
   const [allTenants, setAllTenants] = useState<Tenant[]>([]);
   const [memberTenantId, setMemberTenantId] = useState<string>('');
   const [members, setMembers] = useState<MemberWithEmail[]>([]);
@@ -1078,6 +1079,12 @@ export default function SystemAdminDashboard() {
             className={`px-4 py-2 text-sm font-medium rounded-lg ${activeTab === 'bulkMaintenance' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
           >
             Bulk & Bảo trì
+          </button>
+          <button
+            onClick={() => setActiveTab('apiKeys')}
+            className={`px-4 py-2 text-sm font-medium rounded-lg ${activeTab === 'apiKeys' ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+          >
+            API Keys
           </button>
         </div>
 
@@ -2005,6 +2012,8 @@ export default function SystemAdminDashboard() {
     {activeTab === 'storage' && <StorageBackupPanel />}
 
     {activeTab === 'bulkMaintenance' && <BulkMaintenancePanel />}
+
+    {activeTab === 'apiKeys' && <ApiKeyManager />}
 
   </div>
 
