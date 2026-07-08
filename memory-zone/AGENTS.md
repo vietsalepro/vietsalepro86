@@ -1177,5 +1177,6 @@ User explicitly instructed: only push the multi-tenancy branch to the remote/pro
 - Smoke test: `tests/smoke/admin-dashboard-p13-1-system-health.test.ts` (1 test).
 - Backup: `C:\Users\SUACAUBA\Downloads\Project\vietsale-pro-v7_backup_admin_dashboard_admin-dashboard-p13-1-system-health_20260708_074242`.
 - `npm run lint` PASS · `npm run build` PASS · `npx vitest run tests/smoke` 116/116 PASS.
-- Edge Function deployed to linked Supabase project `shbmzvfcenbybvyzclem` (QLBH Staging Multi-Tenant); verified `401 Missing authorization header` on unauthenticated request.
+- Edge Function deployed to production Supabase project `rsialbfjswnrkzcxarnj` (QLBH) via Supabase MCP; verified `401 Missing authorization header` on unauthenticated request.
+- Note: P13.1 has no DB migration.
 
