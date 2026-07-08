@@ -43,6 +43,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { TenantProvider, useTenant } from './contexts/TenantContext';
 import LandingPage from './pages/LandingPage';
 import SystemAdminDashboard from './pages/SystemAdminDashboard';
+import MfaChallenge from './components/MfaChallenge';
 import { TenantNotFoundPage, TenantSuspendedPage, TenantForbiddenPage } from './components/TenantStatusPages';
 import { getSubdomain } from './lib/tenant';
 import { 
@@ -74,7 +75,7 @@ function CustomersWrapper(props: any) {
 }
 
 function AppContent() {
-  const { user, signOut, loading: authLoading } = useAuth();
+  const { user, signOut, loading: authLoading, mfaPending } = useAuth();
   const { tenant, membership, isLoading: tenantLoading } = useTenant();
   const navigate = useNavigate();
   const location = useLocation();
@@ -1289,6 +1290,10 @@ function AppContent() {
         </div>
       </div>
     );
+  }
+
+  if (mfaPending) {
+    return <MfaChallenge />;
   }
 
   const subdomain = getSubdomain();

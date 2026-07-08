@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Loader2, Lock, Mail, Store, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { isMfaRequired } from '../services/twoFactorService';
 import './Login.css';
 
 export const Login = () => {
+  const { setMfaPending } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,12 +19,18 @@ export const Login = () => {
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (signInError) throw signInError;
+
+      // Nếu user đã bật 2FA, chuyển sang bước xác minh MFA thay vì vào app luôn.
+      const { required } = await isMfaRequired();
+      if (required) {
+        setMfaPending(true);
+      }
     } catch (err: any) {
       setError(err.message || 'Đăng nhập thất bại');
     } finally {
