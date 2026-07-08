@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { usePermissions } from '../hooks/usePermissions';
 import { ReadOnlyBanner } from './ReadOnlyBanner';
+import InAppMessageBanner from './InAppMessageBanner';
 import './MobileLayout.css';
 
 interface MobileLayoutProps {
@@ -43,6 +44,7 @@ export function MobileLayout({ children }: MobileLayoutProps) {
       <ReadOnlyBanner />
       {/* Main content — pages render their own top bar; this layout only provides drawer */}
       <div className="max-w-4xl mx-auto md:px-4 md:py-4">
+        <InAppMessageBanner />
         {children}
       </div>
 
