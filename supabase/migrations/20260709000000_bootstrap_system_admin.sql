@@ -8,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 DO $$
 DECLARE
-  v_email TEXT := 'admin@example.com'; -- TODO: replace with the real admin email before deploy
+  v_email TEXT := 'suacauba@gmail.com'; -- production system admin email
   v_user_id UUID;
   v_random_password TEXT := extensions.gen_random_uuid()::text;
 BEGIN
