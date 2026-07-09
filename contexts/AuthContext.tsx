@@ -24,22 +24,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check active sessions and sets the user
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const initializeSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        setUser(session?.user ?? null);
 
-      // ponytail: nếu session tồn tại nhưng chưa đạt AAL2, giữ user ở trạng thái chờ MFA.
-      if (session?.user) {
-        try {
-          const { required } = await isMfaRequired();
-          if (required) setMfaPending(true);
-        } catch {
-          // Bỏ qua lỗi MFA check; để app tự xử lý khi cần.
+        // ponytail: nếu session tồn tại nhưng chưa đạt AAL2, giữ user ở trạng thái chờ MFA.
+        if (session?.user) {
+          try {
+            const { required } = await isMfaRequired();
+            if (required) setMfaPending(true);
+          } catch {
+            // Bỏ qua lỗi MFA check; để app tự xử lý khi cần.
+          }
         }
+      } catch {
+        // ponytail: nếu getSession() lỗi (VD: cấu hình Supabase sai), vẫn thoát loading
+        // để app render chứ không để màn hình trắng vĩnh viễn.
+        setSession(null);
+        setUser(null);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
-    });
+    };
+    initializeSession();
 
     // Listen for changes on auth state (sign in, sign out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
