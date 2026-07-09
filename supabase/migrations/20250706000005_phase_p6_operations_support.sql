@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.system_settings (
   key TEXT PRIMARY KEY,
   value JSONB NOT NULL DEFAULT '{}'::jsonb,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_by UUID DEFAULT auth.uid()
+  updated_by UUID
 );
 
 ALTER TABLE public.system_settings ENABLE ROW LEVEL SECURITY;
@@ -36,6 +36,27 @@ BEGIN
       WITH CHECK (public.is_system_admin());
   END IF;
 END $$;
+
+ALTER TABLE public.system_settings
+  ALTER COLUMN updated_by DROP DEFAULT;
+
+CREATE OR REPLACE FUNCTION public.system_settings_set_updated_by()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+BEGIN
+  NEW.updated_by := auth.uid();
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS system_settings_updated_by_trigger ON public.system_settings;
+CREATE TRIGGER system_settings_updated_by_trigger
+  BEFORE INSERT OR UPDATE ON public.system_settings
+  FOR EACH ROW
+  EXECUTE FUNCTION public.system_settings_set_updated_by();
 
 -- ============================================================
 -- 2. Seed default settings
@@ -206,8 +227,7 @@ BEGIN
   VALUES (v_key, v_value)
   ON CONFLICT (key) DO UPDATE
     SET value = EXCLUDED.value,
-        updated_at = now(),
-        updated_by = auth.uid()
+        updated_at = now()
   RETURNING value INTO v_value;
 
   RETURN v_value;
@@ -242,8 +262,7 @@ BEGIN
   VALUES ('maintenance_mode', v_value)
   ON CONFLICT (key) DO UPDATE
     SET value = EXCLUDED.value,
-        updated_at = now(),
-        updated_by = auth.uid()
+        updated_at = now()
   RETURNING value INTO v_value;
 
   RETURN v_value;
@@ -409,7 +428,6 @@ BEGIN
   VALUES ('data_retention_last_run', jsonb_build_object('run_at', now()))
   ON CONFLICT (key) DO UPDATE
     SET value = EXCLUDED.value,
-        updated_at = now(),
-        updated_by = auth.uid();
+        updated_at = now();
 END;
 $$;
