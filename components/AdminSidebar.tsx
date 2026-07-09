@@ -175,8 +175,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                       )}
 
                       {hasChildren && !collapsed && (
-                        <span
+                        <button
+                          type="button"
                           className="admin-sidebar__item-chevron"
+                          aria-label={isExpanded ? `Thu gọn ${item.label}` : `Mở rộng ${item.label}`}
+                          aria-expanded={isExpanded}
                           style={{
                             transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
                             transition: 'transform var(--motion-fast)',
@@ -187,7 +190,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                           }}
                         >
                           <ChevronIcon />
-                        </span>
+                        </button>
                       )}
                     </button>
 

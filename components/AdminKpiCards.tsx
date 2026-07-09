@@ -54,10 +54,15 @@ export const AdminKpiCards: React.FC<AdminKpiCardsProps> = ({ cards }) => {
         const trendDown = card.trend != null && card.trend < 0;
         const trendColor = card.color || 'var(--color-primary-500)';
 
+        const trendAriaLabel = card.trend != null
+          ? `${trendUp ? 'Tăng' : trendDown ? 'Giảm' : 'Thay đổi'} ${Math.abs(card.trend)}% ${card.trendLabel || ''}`
+          : undefined;
+
         return (
-          <div
+          <article
             key={index}
             className="admin-kpi-card"
+            aria-label={`${card.label}: ${card.value}`}
             style={{ '--kpi-accent': trendColor } as React.CSSProperties}
           >
             <div className="admin-kpi-card__header">
@@ -73,6 +78,7 @@ export const AdminKpiCards: React.FC<AdminKpiCardsProps> = ({ cards }) => {
                       ? 'admin-kpi-card__trend--down'
                       : 'admin-kpi-card__trend--neutral'
                   }`}
+                  aria-label={trendAriaLabel}
                 >
                   <TrendArrow direction={trendUp ? 'up' : trendDown ? 'down' : 'up'} />
                   {Math.abs(card.trend)}%
@@ -84,7 +90,7 @@ export const AdminKpiCards: React.FC<AdminKpiCardsProps> = ({ cards }) => {
             {card.trendLabel && (
               <div className="admin-kpi-card__trend-label">{card.trendLabel}</div>
             )}
-          </div>
+          </article>
         );
       })}
     </div>

@@ -327,6 +327,7 @@ export const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
           <input
             type="text"
             placeholder="Tìm kiếm phiếu nhập..."
+            aria-label="Tìm kiếm nhanh"
             className="adv-filter__search-input"
             value={localKeyword}
             onChange={(e) => setLocalKeyword(e.target.value)}
@@ -344,6 +345,8 @@ export const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
               <button
                 type="button"
                 className="adv-filter__pill-value"
+                aria-haspopup="listbox"
+                aria-expanded={openPill === pill.key}
                 onClick={() => setOpenPill(openPill === pill.key ? null : pill.key)}
               >
                 {pill.label}: {pill.value}
@@ -353,7 +356,7 @@ export const AdvancedFilterPanel: React.FC<AdvancedFilterPanelProps> = ({
                 type="button"
                 className="adv-filter__pill-remove"
                 onClick={() => removeFilter(pill.key)}
-                aria-label={`Remove ${pill.label} filter`}
+                aria-label={`Remove filter: ${pill.label}`}
               >
                 <X size={14} />
               </button>

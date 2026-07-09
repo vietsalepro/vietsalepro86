@@ -168,6 +168,12 @@
   background: color-mix(in srgb, var(--color-primary-500) var(--opacity-10), transparent);
 }
 
+.admin-sidebar__item:focus-visible,
+.admin-sidebar__toggle:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
 /* ── Item Icon ──────────────────────────────────── */
 .admin-sidebar__item-icon {
   width: 20px;
@@ -180,6 +186,24 @@
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.admin-sidebar__item-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: var(--space-1);
+  margin-left: auto;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.admin-sidebar__item-chevron:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
 }
 
 /* ── Item Tooltip (collapsed mode, CSS-only) ────── */

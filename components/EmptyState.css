@@ -67,6 +67,11 @@
   margin-top: var(--space-5);
 }
 
+.empty-state__action button:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
 /* ─── Compact variant ──────────────────── */
 .empty-state--compact {
   gap: var(--space-2);

@@ -17,6 +17,7 @@
  */
 
 import React from 'react';
+import { AlertCircle } from 'lucide-react';
 import { ActionButton } from './ActionButton';
 import './ErrorState.css';
 
@@ -62,30 +63,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
       aria-live="assertive"
     >
       <div className="error-state__icon" aria-hidden="true">
-        {/* SVG error icon — hardcoded only for iconography, not styling */}
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 48 48"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <circle
-            cx="24"
-            cy="24"
-            r="20"
-            stroke="currentColor"
-            strokeWidth="2"
-            fill="var(--color-danger-50)"
-          />
-          <path
-            d="M24 16V26"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <circle cx="24" cy="30" r="1.5" fill="currentColor" />
-        </svg>
+        <AlertCircle size={48} />
       </div>
       <h3 className="error-state__title">{title}</h3>
       <p className="error-state__message">{message}</p>

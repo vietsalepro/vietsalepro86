@@ -154,6 +154,10 @@ export interface DataGridProps<T = unknown> {
   embedded?: boolean;
   /** Default row density */
   density?: Density;
+  /** Render data as cards on mobile viewports (default: true) */
+  mobileCards?: boolean;
+  /** Accessible label for the data grid table/cards */
+  ariaLabel?: string;
 }
 
 /* ─── Utility Helpers ────────────────────────────────── */
@@ -458,18 +462,32 @@ export function DataGridHeader<T>({
   someSelected,
   onSelectAll,
 }: DataGridHeaderProps<T>): React.ReactElement {
-  const handleSortClick = (column: DataGridColumn<T>) => {
+  const [sortAnnouncement, setSortAnnouncement] = useState('');
+
+  const handleSort = (column: DataGridColumn<T>) => {
     if (!column.sortable || !onSortChange) return;
 
     const currentDirection = sortKey === column.key ? sortDirection : 'none';
     const nextDirection: SortDirection =
       currentDirection === 'none' ? 'asc' : currentDirection === 'asc' ? 'desc' : 'none';
 
+    const directionText = nextDirection === 'asc' ? 'tăng dần' : 'giảm dần';
+    setSortAnnouncement(`Đã sắp xếp ${column.label} theo thứ tự ${directionText}`);
     onSortChange(column.key, nextDirection);
+  };
+
+  const handleSortKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, column: DataGridColumn<T>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleSort(column);
+    }
   };
 
   return (
     <div className="datagrid-header" role="rowgroup">
+      <div className="visually-hidden" role="status" aria-live="polite" aria-atomic="true">
+        {sortAnnouncement}
+      </div>
       <div className="datagrid-header__row" role="row">
         {selectable && (
           <div
@@ -488,33 +506,39 @@ export function DataGridHeader<T>({
             />
           </div>
         )}
-        {columns.map((column) => (
-          <div
-            key={column.key}
-            className={[
-              'datagrid-header__cell',
-              column.sortable ? 'datagrid-header__cell--sortable' : '',
-              `datagrid-header__cell--align-${column.align || 'left'}`,
-              column.sticky === 'left' ? 'datagrid-header__cell--sticky-left' : '',
-              column.sticky === 'right' ? 'datagrid-header__cell--sticky-right' : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            role="columnheader"
-            style={getColumnStyle(column)}
-            onClick={() => handleSortClick(column)}
-            aria-sort={
-              sortKey === column.key && sortDirection !== 'none'
-                ? sortDirection === 'asc'
-                  ? 'ascending'
-                  : 'descending'
-                : undefined
-            }
-          >
-            <span className="datagrid-header__label">{column.label}</span>
-            {column.sortable && getSortIcon(sortDirection || 'none', sortKey === column.key)}
-          </div>
-        ))}
+        {columns.map((column) => {
+          const isSortable = column.sortable && !!onSortChange;
+          return (
+            <div
+              key={column.key}
+              className={[
+                'datagrid-header__cell',
+                isSortable ? 'datagrid-header__cell--sortable' : '',
+                `datagrid-header__cell--align-${column.align || 'left'}`,
+                column.sticky === 'left' ? 'datagrid-header__cell--sticky-left' : '',
+                column.sticky === 'right' ? 'datagrid-header__cell--sticky-right' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              role="columnheader"
+              style={getColumnStyle(column)}
+              tabIndex={isSortable ? 0 : undefined}
+              onClick={() => handleSort(column)}
+              onKeyDown={(e) => handleSortKeyDown(e, column)}
+              aria-label={isSortable ? `Sort by ${column.label}` : undefined}
+              aria-sort={
+                sortKey === column.key && sortDirection !== 'none'
+                  ? sortDirection === 'asc'
+                    ? 'ascending'
+                    : 'descending'
+                  : undefined
+              }
+            >
+              <span className="datagrid-header__label">{column.label}</span>
+              {isSortable && getSortIcon(sortDirection || 'none', sortKey === column.key)}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -530,6 +554,7 @@ interface DataGridRowProps<T> {
   selected?: boolean;
   onSelect?: (key: string | number) => void;
   onClick?: (item: T) => void;
+  animate?: boolean;
 }
 
 export function DataGridRow<T>({
@@ -540,6 +565,7 @@ export function DataGridRow<T>({
   selected,
   onSelect,
   onClick,
+  animate,
 }: DataGridRowProps<T>): React.ReactElement {
   const handleRowClick = () => {
     onClick?.(item);
@@ -556,7 +582,8 @@ export function DataGridRow<T>({
         'datagrid-row',
         selected ? 'datagrid-row--selected' : '',
         onClick ? 'datagrid-row--clickable' : '',
-      ].join(' ')}
+        animate ? 'datagrid-row--animate-in' : '',
+      ].filter(Boolean).join(' ')}
       role="row"
       onClick={handleRowClick}
     >
@@ -606,6 +633,7 @@ interface DataGridBodyProps<T> {
   onSelectionChange?: (selectedKeys: (string | number)[]) => void;
   onRowClick?: (item: T) => void;
   selectable?: boolean;
+  animate?: boolean;
 }
 
 export function DataGridBody<T>({
@@ -616,6 +644,7 @@ export function DataGridBody<T>({
   onSelectionChange,
   onRowClick,
   selectable,
+  animate,
 }: DataGridBodyProps<T>): React.ReactElement {
   const selectedSet = useMemo(() => new Set(selectedRows), [selectedRows]);
 
@@ -645,7 +674,112 @@ export function DataGridBody<T>({
             selected={selectedSet.has(rowKey)}
             onSelect={selectable ? handleSelect : undefined}
             onClick={onRowClick}
+            animate={animate}
           />
+        );
+      })}
+    </div>
+  );
+}
+
+/* ─── DataGridMobileCards ────────────────────────────── */
+
+interface DataGridMobileCardsProps<T> {
+  data: T[];
+  columns: DataGridColumn<T>[];
+  keyExtractor: (item: T) => string | number;
+  selectedRows?: (string | number)[];
+  onSelectionChange?: (selectedKeys: (string | number)[]) => void;
+  onRowClick?: (item: T) => void;
+  selectable?: boolean;
+  animate?: boolean;
+  ariaLabel?: string;
+}
+
+function DataGridMobileCards<T>({
+  data,
+  columns,
+  keyExtractor,
+  selectedRows = [],
+  onSelectionChange,
+  onRowClick,
+  selectable,
+  animate,
+  ariaLabel,
+}: DataGridMobileCardsProps<T>): React.ReactElement {
+  const selectedSet = useMemo(() => new Set(selectedRows), [selectedRows]);
+
+  const handleSelect = (key: string | number) => {
+    if (!onSelectionChange) return;
+    const next = new Set(selectedSet);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    onSelectionChange(Array.from(next));
+  };
+
+  const titleColumn = columns[0];
+  const detailColumns = columns.slice(1);
+
+  return (
+    <div className="datagrid-mobile-cards" role="list" aria-label={ariaLabel}>
+      {data.map((item, index) => {
+        const rowKey = keyExtractor(item);
+        const titleNode = titleColumn
+          ? (titleColumn.render
+              ? titleColumn.render(item, index)
+              : (item as Record<string, unknown>)[titleColumn.key] as React.ReactNode)
+          : null;
+        const selected = selectedSet.has(rowKey);
+
+        const handleCardClick = () => {
+          onRowClick?.(item);
+        };
+
+        const handleCardKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+          if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            onRowClick(item);
+          }
+        };
+
+        return (
+          <div
+            key={rowKey}
+            className={[
+              'datagrid-mobile-card',
+              animate ? 'datagrid-row--animate-in' : '',
+            ].filter(Boolean).join(' ')}
+            role="listitem"
+            tabIndex={onRowClick ? 0 : undefined}
+            onClick={onRowClick ? handleCardClick : undefined}
+            onKeyDown={onRowClick ? handleCardKeyDown : undefined}
+          >
+            <div className="datagrid-mobile-card__header">
+              <span className="datagrid-mobile-card__title">{titleNode}</span>
+              {selectable && (
+                <input
+                  type="checkbox"
+                  className="datagrid-checkbox"
+                  checked={selected}
+                  onChange={() => handleSelect(rowKey)}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label="Select row"
+                />
+              )}
+            </div>
+            <div className="datagrid-mobile-card__body">
+              {detailColumns.map((column) => (
+                <div key={column.key} className="datagrid-mobile-card__field">
+                  <span className="datagrid-mobile-card__field-label">{column.label}</span>
+                  <span className="datagrid-mobile-card__field-value">
+                    {column.render
+                      ? column.render(item, index)
+                      : (item as Record<string, unknown>)[column.key] as React.ReactNode}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         );
       })}
     </div>
@@ -675,6 +809,8 @@ export function DataGrid<T>({
   className,
   embedded = false,
   density: densityProp,
+  mobileCards = true,
+  ariaLabel = 'Data grid',
 }: DataGridProps<T>): React.ReactElement {
   const selectable = !!onSelectionChange;
   const selectedSet = useMemo(() => new Set(selectedRows || []), [selectedRows]);
@@ -704,6 +840,27 @@ export function DataGrid<T>({
   const [scrolledRight, setScrolledRight] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  /* Mobile card layout (< 768px) */
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  useEffect(() => {
+    const update = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  /* Stagger animation: only on first non-empty data load */
+  const [animateRows, setAnimateRows] = useState(false);
+  const animatedRef = useRef(false);
+  useEffect(() => {
+    if (animatedRef.current) return;
+    if (data.length > 0) {
+      animatedRef.current = true;
+      setAnimateRows(true);
+      const timer = setTimeout(() => setAnimateRows(false), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [data]);
 
   useEffect(() => {
     if (!contentRef.current || !sentinelRef.current) return;
@@ -797,10 +954,35 @@ export function DataGrid<T>({
       );
     }
 
+    if (isMobile && mobileCards) {
+      return (
+        <DataGridMobileCards
+          data={data}
+          columns={visibleCols}
+          keyExtractor={keyExtractor}
+          selectedRows={selectedRows}
+          onSelectionChange={onSelectionChange}
+          onRowClick={onRowClick}
+          selectable={selectable}
+          animate={animateRows}
+          ariaLabel={ariaLabel}
+        />
+      );
+    }
+
+    const colCount = visibleCols.length + (selectable ? 1 : 0);
+    const rowCount = data.length + 1;
+
     return (
       <>
         <div className="datagrid-sentinel" ref={sentinelRef} aria-hidden="true" />
-        <div className="datagrid-table" role="table" aria-label="Data grid">
+        <div
+          className="datagrid-table"
+          role="table"
+          aria-label={ariaLabel}
+          aria-rowcount={rowCount}
+          aria-colcount={colCount}
+        >
           <DataGridHeader
             columns={visibleCols}
             sortKey={sortKey}
@@ -819,6 +1001,7 @@ export function DataGrid<T>({
             onSelectionChange={onSelectionChange}
             onRowClick={onRowClick}
             selectable={selectable}
+            animate={animateRows}
           />
         </div>
       </>

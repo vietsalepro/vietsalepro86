@@ -287,7 +287,9 @@ export const MasterModal: React.FC<MasterModalProps> = ({
   // ── V2: CSS-driven path ──────────────────────────────────
   if (useMasterModalV2) {
     const sizeClass = SIZE_CLASS_V2[size] || 'size-lg';
+    const subtitleId = subtitle ? 'mm-subtitle' : undefined;
     const stateDescriptionId = showError ? 'mm-error-desc' : undefined;
+    const descriptionId = [subtitleId, stateDescriptionId].filter(Boolean).join(' ') || undefined;
 
     return (
       <div className="master-modal-root">
@@ -306,7 +308,7 @@ export const MasterModal: React.FC<MasterModalProps> = ({
             role="dialog"
             aria-modal="true"
             aria-labelledby="mm-title"
-            aria-describedby={stateDescriptionId}
+            aria-describedby={descriptionId}
             tabIndex={-1}
             className={`master-modal-dialog ${sizeClass}${closing ? ' master-modal-dialog--closing' : ''}`}
           >
@@ -328,7 +330,7 @@ export const MasterModal: React.FC<MasterModalProps> = ({
                     </h2>
                     {badge}
                   </div>
-                  {subtitle && <p className="master-modal-subtitle">{subtitle}</p>}
+                  {subtitle && <p id="mm-subtitle" className="master-modal-subtitle">{subtitle}</p>}
                 </div>
               </div>
 
@@ -383,6 +385,7 @@ export const MasterModal: React.FC<MasterModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="mm-title"
+        aria-describedby={subtitle ? 'mm-subtitle' : undefined}
         className={`relative w-full flex flex-col max-h-[92vh] master-modal-v1-dialog ${SIZE_MAP_V1[size] || 'max-w-2xl'}`}
       >
         {/* Header */}
@@ -405,7 +408,7 @@ export const MasterModal: React.FC<MasterModalProps> = ({
                 </h2>
                 {badge}
               </div>
-              {subtitle && <p className="text-xs text-slate-400 mt-0.5 truncate">{subtitle}</p>}
+              {subtitle && <p id="mm-subtitle" className="text-xs text-slate-400 mt-0.5 truncate">{subtitle}</p>}
             </div>
           </div>
 

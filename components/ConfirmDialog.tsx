@@ -27,6 +27,8 @@ const ICON_COLORS: Record<string, string> = {
   info: 'var(--color-info-500)',
 };
 
+const FOCUSABLE_SELECTOR = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   open,
   title,
@@ -38,12 +40,15 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
-  const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousActiveElement = useRef<Element | null>(null);
   const Icon = ICONS[variant];
 
   useEffect(() => {
     if (open) {
-      cancelRef.current?.focus();
+      previousActiveElement.current = document.activeElement;
+      const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      (focusable?.[0] ?? dialogRef.current)?.focus();
     }
   }, [open]);
 
@@ -52,15 +57,46 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.preventDefault();
         onCancel();
-      } else if (e.key === 'Enter') {
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
         onConfirm();
+        return;
+      }
+
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [open, onCancel, onConfirm]);
+
+  useEffect(() => {
+    if (open) return;
+    const target = previousActiveElement.current;
+    if (target && target instanceof HTMLElement && target.isConnected) {
+      target.focus();
+    }
+    previousActiveElement.current = null;
+  }, [open]);
 
   if (!open) return null;
 
@@ -72,11 +108,13 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       aria-hidden="false"
     >
       <div
+        ref={dialogRef}
         className="confirm-dialog"
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-message"
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >
         <div
@@ -97,7 +135,6 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
         <div className="confirm-dialog__actions">
           <ActionButton
-            ref={cancelRef}
             variant="secondary"
             size="md"
             onClick={onCancel}

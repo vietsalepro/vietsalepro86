@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import './AdminTabs.css';
 
 /* ─── Types ─────────────────────────────────────────── */
@@ -17,23 +17,59 @@ interface AdminTabsProps {
 }
 
 export const AdminTabs: React.FC<AdminTabsProps> = ({ tabs, activeTab, onTabChange, children }) => {
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  const focusTab = useCallback((index: number) => {
+    const tab = tabRefs.current[index];
+    if (tab) {
+      tab.focus();
+      onTabChange(tabs[index].id);
+    }
+  }, [tabs, onTabChange]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const lastIndex = tabs.length - 1;
+    let nextIndex = index;
+
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      nextIndex = index >= lastIndex ? 0 : index + 1;
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      nextIndex = index <= 0 ? lastIndex : index - 1;
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      nextIndex = 0;
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      nextIndex = lastIndex;
+    } else {
+      return;
+    }
+
+    focusTab(nextIndex);
+  }, [tabs.length, focusTab]);
+
   return (
     <div className="admin-tabs">
-      <nav className="admin-tabs__list" role="tablist">
-        {tabs.map((tab) => {
+      <nav className="admin-tabs__list" role="tablist" aria-label="Page tabs">
+        {tabs.map((tab, index) => {
           const isActive = tab.id === activeTab;
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
+              ref={(el) => { tabRefs.current[index] = el; }}
               className={`admin-tabs__item ${isActive ? 'admin-tabs__item--active' : ''}`}
               role="tab"
               aria-selected={isActive}
               aria-controls={`admin-tab-panel-${tab.id}`}
               id={`admin-tab-${tab.id}`}
+              tabIndex={isActive ? 0 : -1}
               onClick={() => onTabChange(tab.id)}
+              onKeyDown={(e) => handleKeyDown(e, index)}
             >
-                    {Icon && <Icon size={16} />}
+              {Icon && <Icon size={16} />}
               <span className="admin-tabs__label">{tab.label}</span>
               {typeof tab.badge === 'number' && tab.badge > 0 && (
                 <span className="admin-tabs__badge" aria-label={`${tab.badge} new items`}>{tab.badge}</span>

@@ -35,11 +35,12 @@ export const Toast: React.FC<ToastProps> = ({
     return () => clearTimeout(timer);
   }, [duration, id, onDismiss]);
 
+  const toastRole = type === 'error' || type === 'warning' ? 'alert' : 'status';
+
   return (
     <div
       className={`toast toast--${type}${exiting ? ' toast--exiting' : ''}`}
-      role="status"
-      aria-live="polite"
+      role={toastRole}
     >
       <div className="toast__content">
         <span className={`toast__indicator toast__indicator--${type}`}>{ICONS[type]}</span>

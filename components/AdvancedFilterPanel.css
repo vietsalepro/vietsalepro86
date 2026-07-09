@@ -110,6 +110,22 @@
   color: var(--color-text-primary);
 }
 
+.adv-filter__pill-value:focus-visible,
+.adv-filter__pill-remove:focus-visible,
+.adv-filter__add:focus-visible,
+.adv-filter__saved-trigger:focus-visible,
+.adv-filter__option:focus-visible,
+.adv-filter__pill-option:focus-visible,
+.adv-filter__date-apply:focus-visible,
+.adv-filter__save-btn:focus-visible,
+.adv-filter__saved-delete:focus-visible,
+.adv-filter__reset:focus-visible,
+.adv-filter__date-input:focus-visible,
+.adv-filter__save-input:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+
 /* Add filter + saved filter triggers */
 .adv-filter__add {
   display: inline-flex;

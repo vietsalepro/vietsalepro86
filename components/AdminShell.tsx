@@ -76,6 +76,11 @@ export const AdminShell: React.FC<AdminShellProps> = ({
 
   return (
     <div className="admin-shell">
+      {/* Skip to main content link for keyboard users */}
+      <a href="#admin-main-content" className="skip-link">
+        Skip to main content
+      </a>
+
       {/* Sidebar */}
       <AdminSidebar
         sections={sidebarSections}
@@ -112,7 +117,7 @@ export const AdminShell: React.FC<AdminShellProps> = ({
         </header>
 
         {/* Scrollable content */}
-        <main className="admin-shell__content">
+        <main id="admin-main-content" className="admin-shell__content">
           {/* Breadcrumbs */}
           {breadcrumbs && breadcrumbs.length > 0 && (
             <nav className="admin-shell__breadcrumb" aria-label="Breadcrumb">

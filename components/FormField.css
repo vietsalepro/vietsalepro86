@@ -13,7 +13,7 @@
 }
 
 .form-field__required {
-  color: var(--color-danger-500, #ef4444);
+  color: var(--color-danger-700, #b91c1c);
   margin-left: 2px;
 }
 
@@ -46,6 +46,6 @@
   gap: var(--space-1, 4px);
   margin: var(--space-1, 4px) 0 0;
   font-size: var(--text-xs, 12px);
-  color: var(--color-danger-500, #ef4444);
+  color: var(--color-danger-700, #b91c1c);
   line-height: var(--leading-normal, 1.5);
 }

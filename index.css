@@ -31,6 +31,12 @@ body {
   font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+  /* Visible focus indicator for keyboard navigation */
+  :focus-visible {
+    outline: 2px solid var(--color-border-focus, #6C4DFF);
+    outline-offset: 2px;
+  }
+
   /* Custom scrollbar - Shoply style */
   ::-webkit-scrollbar {
     width: 6px;

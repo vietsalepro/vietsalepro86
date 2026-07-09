@@ -229,7 +229,7 @@
   /* ── 1O. Semantic Text Colors ────────────────── */
   --color-text-primary:     #0f172a;
   --color-text-secondary:   #64748b;
-  --color-text-muted:       #94a3b8;
+  --color-text-muted:       #6b7280;  /* WCAG AA 4.6:1 on white */
   --color-text-disabled:    #cbd5e1;
   --color-text-inverse:     #ffffff;
   --color-text-success:     #065f46;
@@ -258,6 +258,17 @@
   --color-border-warning:   #fde68a;
   --color-border-danger:    #fecaca;
   --color-border-info:      #bfdbfe;
+
+  /* ── 1R. Legacy Semantic Aliases ─────────────── */
+  --color-text:             var(--color-text-primary);
+  --color-bg:               var(--color-bg-primary);
+  --color-surface:          var(--color-bg-primary);
+  --color-border:           var(--color-border-default);
+  --color-error:            var(--color-danger-500);
+  --color-error-text:       var(--color-danger-700);
+  --color-success:          var(--color-success-500);
+  --color-warning:          var(--color-warning-500);
+  --color-info:             var(--color-info-500);
 
   /* ───────────────────────────────────────────────
      SECTION 2: TYPOGRAPHY
