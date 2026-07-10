@@ -528,6 +528,20 @@ export async function deleteTenant(tenantId: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function hardDeleteTenant(tenantId: string): Promise<void> {
+  const { data, error } = await supabase.functions.invoke<{ success?: boolean; error?: string }>(
+    'delete-tenant',
+    {
+      body: { tenant_id: tenantId },
+    }
+  );
+
+  if (error) throw error;
+  if (!data || typeof data !== 'object' || !data.success) {
+    throw new Error(data?.error || 'Xóa cửa hàng thất bại');
+  }
+}
+
 // --- System analytics (requires system admin privileges) ---
 
 const mapSystemOverviewFromDB = (row: any): SystemOverview => ({

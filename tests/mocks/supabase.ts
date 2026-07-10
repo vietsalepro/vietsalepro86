@@ -2000,6 +2000,33 @@ const functionsInvoke = async (name: string, { body }: { body: any }) => {
     return { data: { success: true, id: `email-${uuid()}`, to: recipient, type }, error: null };
   }
 
+  if (name === 'delete-tenant') {
+    if (!isSystemAdmin) {
+      return { data: { success: false, error: 'Chỉ system admin được xóa tenant' }, error: null };
+    }
+    const { tenant_id } = body;
+    const tenant = store.tenants.find(t => t.id === tenant_id);
+    if (!tenant) {
+      return { data: { success: false, error: 'Tenant không tồn tại' }, error: null };
+    }
+    store.tenants = store.tenants.filter(t => t.id !== tenant_id);
+    store.tenant_memberships = store.tenant_memberships.filter(m => m.tenant_id !== tenant_id);
+    store.tenant_subscriptions = store.tenant_subscriptions.filter(s => s.tenant_id !== tenant_id);
+    store.tenant_credentials = store.tenant_credentials.filter(c => c.tenant_id !== tenant_id);
+    store.app_audit_log = store.app_audit_log.filter(l => l.tenant_id !== tenant_id);
+    return {
+      data: {
+        success: true,
+        tenant: { id: tenant.id, name: tenant.name, subdomain: tenant.subdomain },
+        storageDeleted: 0,
+        storageFailures: 0,
+        authDeleted: 0,
+        authFailures: 0,
+      },
+      error: null,
+    };
+  }
+
   if (name === 'check-subdomain') {
     const { subdomain } = body;
     const s = (subdomain || '').trim().toLowerCase();

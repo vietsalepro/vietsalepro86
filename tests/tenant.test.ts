@@ -24,6 +24,7 @@ import {
   searchTenants,
   updateTenant,
   softDeleteTenant,
+  hardDeleteTenant,
   restoreTenant,
 } from '../services/tenantService';
 import { restoreTenantBackup, previewBackupTables } from '../services/tenantRestoreService';
@@ -172,6 +173,23 @@ describe('system admin tenant management', () => {
     const restored = await restoreTenant(tenant.id);
     expect(restored.status).toBe('active');
     expect(restored.archivedAt).toBeFalsy();
+  });
+
+  it('hardDeleteTenant xóa vĩnh viễn tenant và dữ liệu liên quan', async () => {
+    setCurrentUserId('admin-008');
+    setSystemAdmin(true);
+    const tenant = await createTenantWithAdmin({ name: 'Cửa hàng Xóa', subdomain: 'store-delete', plan: 'free' });
+
+    await hardDeleteTenant(tenant.id);
+
+    const found = await getTenantById(tenant.id);
+    expect(found).toBeNull();
+
+    const memberships = await getTenantMembers(tenant.id);
+    expect(memberships).toHaveLength(0);
+
+    const subs = getMockRows('tenant_subscriptions').filter((s: any) => s.tenant_id === tenant.id);
+    expect(subs).toHaveLength(0);
   });
 });
 

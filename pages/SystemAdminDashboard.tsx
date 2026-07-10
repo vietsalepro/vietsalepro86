@@ -59,6 +59,7 @@ import {
   SearchTenantsResult,
   updateTenant,
   softDeleteTenant,
+  hardDeleteTenant,
   restoreTenant as restoreTenantStatus,
   getTenantUsageSummary,
   updateTenantSubscription,
@@ -382,6 +383,7 @@ export default function SystemAdminDashboard() {
   const [restorePreview, setRestorePreview] = useState<{ name: string; rows: number }[] | null>(null);
   const [restoreSubmitting, setRestoreSubmitting] = useState(false);
   const [resettingTenantId, setResettingTenantId] = useState<string | null>(null);
+  const [deletingTenantId, setDeletingTenantId] = useState<string | null>(null);
 
   const [subTenant, setSubTenant] = useState<Tenant | null>(null);
   const [subForm, setSubForm] = useState<UpdateSubscriptionInput & { plan: string }>({
@@ -606,6 +608,29 @@ export default function SystemAdminDashboard() {
           await load(page, pageSize);
         } catch (err: any) {
           setError(err?.message || 'Khôi phục cửa hàng thất bại.');
+        }
+      },
+    });
+  };
+
+  const handleDelete = (tenant: Tenant) => {
+    openConfirmDialog({
+      title: 'Xóa cửa hàng vĩnh viễn',
+      message: `Xóa vĩnh viễn cửa hàng "${tenant.name}" (subdomain: ${tenant.subdomain})? Toàn bộ dữ liệu DB, file storage và tài khoản admin thuộc về shop sẽ bị xóa. Subdomain sẽ được giải phóng để tái sử dụng. Thao tác này không thể hoàn tác.`,
+      confirmLabel: 'Xóa vĩnh viễn',
+      cancelLabel: 'Hủy',
+      variant: 'danger',
+      onConfirm: async () => {
+        setDeletingTenantId(tenant.id);
+        setError(null);
+        try {
+          await hardDeleteTenant(tenant.id);
+          addToast({ type: 'success', message: `Đã xóa cửa hàng "${tenant.name}".` });
+          await load(page, pageSize);
+        } catch (err: any) {
+          setError(err?.message || 'Xóa cửa hàng thất bại.');
+        } finally {
+          setDeletingTenantId(null);
         }
       },
     });
@@ -1744,6 +1769,13 @@ export default function SystemAdminDashboard() {
                                 Lưu trữ
                               </button>
                             )}
+                            <button
+                              onClick={() => handleDelete(t)}
+                              disabled={deletingTenantId === t.id}
+                              className="px-3 py-1.5 text-sm text-red-700 bg-red-50 hover:bg-red-100 rounded-lg disabled:opacity-60"
+                            >
+                              {deletingTenantId === t.id ? 'Đang xóa...' : 'Xóa'}
+                            </button>
                           </div>
                         </td>
                       </tr>
