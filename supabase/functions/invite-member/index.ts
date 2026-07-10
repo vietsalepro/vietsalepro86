@@ -166,14 +166,13 @@ serve(async (req) => {
       return jsonResponse({ error: 'Đã đạt giới hạn số user của gói dịch vụ' }, 403);
     }
 
-    // Find user by email via direct auth schema query.
-    const { data: userRow, error: userRowError } = await supabaseAdmin
-      .schema('auth')
-      .from('users')
-      .select('id,email,last_sign_in_at,confirmed_at')
-      .eq('email', normalizedEmail)
-      .maybeSingle();
+    // Find user by email via SECURITY DEFINER RPC (auth schema is not exposed over PostgREST).
+    const { data: userRows, error: userRowError } = await supabaseAdmin.rpc(
+      'get_user_by_email',
+      { p_email: normalizedEmail }
+    );
     if (userRowError) throw userRowError;
+    const userRow = userRows && Array.isArray(userRows) && userRows.length > 0 ? userRows[0] : null;
 
     let targetUserId: string;
     let isNewUser = false;
@@ -204,12 +203,11 @@ serve(async (req) => {
         if (createUserError.message.toLowerCase().includes('already')) {
           // ponytail: race guard - another request created the user between our query and insert.
           // Re-query and continue as an existing user; if it is already a member we will 409 below.
-          const { data: raceUser } = await supabaseAdmin
-            .schema('auth')
-            .from('users')
-            .select('id,email,last_sign_in_at,confirmed_at')
-            .eq('email', normalizedEmail)
-            .maybeSingle();
+          const { data: raceUsers } = await supabaseAdmin.rpc(
+            'get_user_by_email',
+            { p_email: normalizedEmail }
+          );
+          const raceUser = raceUsers && Array.isArray(raceUsers) && raceUsers.length > 0 ? raceUsers[0] : null;
           if (!raceUser) {
             throw new Error('Tạo user thất bại');
           }

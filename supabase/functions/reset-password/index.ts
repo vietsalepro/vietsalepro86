@@ -105,13 +105,12 @@ serve(async (req) => {
 
     if (!targetUser && email) {
       const normalizedEmail = email.trim().toLowerCase();
-      const { data: userByEmail, error: userByEmailError } = await supabaseAdmin
-        .schema('auth')
-        .from('users')
-        .select('id, email, last_sign_in_at')
-        .eq('email', normalizedEmail)
-        .maybeSingle();
+      const { data: userRows, error: userByEmailError } = await supabaseAdmin.rpc(
+        'get_user_by_email',
+        { p_email: normalizedEmail }
+      );
       if (userByEmailError) throw userByEmailError;
+      const userByEmail = userRows && Array.isArray(userRows) && userRows.length > 0 ? userRows[0] : null;
       if (userByEmail) {
         targetUser = {
           id: userByEmail.id as string,

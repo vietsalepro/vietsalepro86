@@ -162,6 +162,8 @@ serve(async (req) => {
     }
 
     let tenant: Record<string, unknown>;
+    let redirectTo: string | undefined;
+    let linkError: { message?: string } | null = null;
     try {
       const { data: tenantData, error: tenantError } = await supabaseAdmin
         .from('tenants')
@@ -216,12 +218,13 @@ serve(async (req) => {
 
       // Trigger a password reset/setup email so the admin can set their own password.
       // ponytail: the temporary password is never returned; Supabase Auth sends the link when an email provider is configured.
-      const redirectTo = `https://${tenant.subdomain as string}.vietsalepro.com/set-password`;
-      const { error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      redirectTo = `https://${tenant.subdomain as string}.vietsalepro.com/set-password`;
+      const { error: generateError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'invite',
         email: adminUser.email as string,
         options: { redirectTo },
       });
+      linkError = generateError ?? null;
 
       if (linkError) {
         console.error('Failed to send tenant admin reset email:', linkError);
