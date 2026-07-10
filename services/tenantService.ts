@@ -167,8 +167,11 @@ export async function createTenantWithCredentials(
     !data.tenant ||
     !data.adminUser ||
     typeof data.adminUser.id !== 'string' ||
+    !data.adminUser.id ||
     typeof data.adminUser.email !== 'string' ||
-    typeof data.initialPassword !== 'string'
+    !data.adminUser.email ||
+    typeof data.initialPassword !== 'string' ||
+    !data.initialPassword
   ) {
     throw new Error(data?.error || 'Phản hồi tạo cửa hàng không hợp lệ');
   }
