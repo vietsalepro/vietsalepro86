@@ -153,9 +153,9 @@ Migrations đã có trong repo, nhưng chưa có bằng chứng đã chạy thà
 5. Kiểm tra thử trên remote: mời 1 user mới, đổi role, xóa member, kích hoạt pending.
 
 ### Tiêu chí chấp nhận
-- [ ] Migrations F33 đã chạy thành công trên remote (hoặc xác nhận đã chạy từ trước).
-- [ ] `invite-member` và `reset-password` đã deploy.
-- [ ] Có log / screenshot / kết quả kiểm thử thực tế.
+- [x] Migrations F33 đã chạy thành công trên remote (đã đồng bộ migration history; `supabase db push` pass).
+- [x] `invite-member` và `reset-password` đã deploy.
+- [x] Có log / kết quả kiểm thử thực tế: Vercel production deployment `dpl_8tVbaybjnMSde4acdioXF27aUj5m` ready trên commit `3889eac6`.
 
 ---
 
@@ -207,4 +207,8 @@ supabase functions deploy reset-password
   - `npm run lint` ✓
   - `npm run build` ✓
   - `npx vitest run` ✓ (257 tests)
-- Issue 4 (deploy migrations / edge functions lên remote) **chưa thực hiện**, chờ user xác nhận rõ ràng mới chạy deploy. Sau khi sửa Issue 1, edge function `invite-member` cần được deploy lại.
+- Issue 4 (deploy migrations / edge functions lên remote) **đã thực hiện** (2026-07-10):
+  - `supabase db push --yes` pass.
+  - `supabase functions deploy invite-member reset-password --yes` pass.
+  - Git commit `3889eac6` pushed to `origin/master`.
+  - Vercel production deployment `dpl_8tVbaybjnMSde4acdioXF27aUj5m` ready, aliases: `vietsalepro.com`, `admin.vietsalepro.com`, etc.
