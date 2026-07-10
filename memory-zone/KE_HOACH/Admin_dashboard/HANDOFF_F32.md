@@ -388,8 +388,17 @@ Nếu có lỗi nghiêm trọng trên production:
 - [x] `npx vitest run`: PASS (244 tests, 41 files)
 - [x] Edge Function deployed version: `create-tenant` trên project `rsialbfjswnrkzcxarnj` (deployed 2026-07-10, script size 72 kB)
 - [x] Vercel deployment URL / commit: `https://admin.vietsalepro.com` (deployment `dpl_DAJ1Q4SuuLkNUjEfMDxZQWuXdEL4`, commit `b92e4eb2`)
-- [ ] Production smoke test result: cần thực hiện trên production sau deploy
-- [ ] Test data cleaned up: cần dọn dẹp sau smoke test
+- [x] Production smoke test result: PASS
+  - Tạo shop `Shop Smoke Test F32` / `shop-smoke-f32` thành công.
+  - Credential: `phatnt056@gmail.com` / `46b5e763-b71d-405c-8961-cdc614c56508`.
+  - URL: `https://shop-smoke-f32.vietsalepro.com/`.
+  - Đăng nhập shop admin thành công, vào được dashboard.
+  - (Email gửi qua Resend: người dùng tự kiểm tra hộp thư `phatnt056@gmail.com`)
+- [x] Test data cleaned up: YES
+  - Tenant `85d6d01d-692b-47c3-a1da-b1e8ba4297c2` đã xóa.
+  - Memberships, subscriptions, audit logs liên quan đã xóa.
+  - `rate_limit_logs` cho IP `14.191.200.121` đã xóa.
+  - Auth user `phatnt056@gmail.com` (`4654b68c-ee42-4302-980a-73206cc4b814`) đã xóa.
 - [x] Final commit hash (code + test): `eef3334`
 
 ---
