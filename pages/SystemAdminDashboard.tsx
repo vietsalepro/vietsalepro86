@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import {
   Store, Users, Package, ShoppingBag, AlertTriangle, Clock, TrendingUp, CreditCard,
   Building2, Receipt, TicketPercent, MessageSquare, Megaphone, Mail, ShieldCheck, Settings, Home,
+  Pencil, Activity, MoreHorizontal, Database, Download, Upload, RotateCcw, Archive, Trash2,
 } from 'lucide-react';
 import AdminShell from '../components/AdminShell';
 import type { SidebarSection } from '../components/AdminSidebar';
@@ -356,6 +357,7 @@ export default function SystemAdminDashboard() {
     isolationProjectRef: '',
   });
   const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editModalTab, setEditModalTab] = useState<'info' | 'subscription' | 'features'>('info');
 
   const [expandedTenantId, setExpandedTenantId] = useState<string | null>(null);
   const [usageMap, setUsageMap] = useState<Record<string, UsageSummary>>({});
@@ -529,6 +531,7 @@ export default function SystemAdminDashboard() {
 
   const openEdit = (tenant: Tenant) => {
     setEditTenant(tenant);
+    setEditModalTab('info');
     setEditForm({
       name: tenant.name,
       plan: tenant.plan,
@@ -540,9 +543,13 @@ export default function SystemAdminDashboard() {
     setError(null);
   };
 
-  const closeEdit = () => {
+  const closeEditModal = () => {
     setEditTenant(null);
+    setSubTenant(null);
+    setFeatureTenant(null);
     setEditSubmitting(false);
+    setSubSubmitting(false);
+    setFeatureSubmitting(false);
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -559,7 +566,7 @@ export default function SystemAdminDashboard() {
         isolationSchema: editForm.isolationSchema.trim() || undefined,
         isolationProjectRef: editForm.isolationProjectRef.trim() || undefined,
       });
-      closeEdit();
+      closeEditModal();
       await load(page, pageSize);
     } catch (err: any) {
       setError(err?.message || 'Cập nhật cửa hàng thất bại.');
@@ -753,6 +760,7 @@ export default function SystemAdminDashboard() {
   const openSubscriptionEdit = (tenant: Tenant) => {
     const usage = usageMap[tenant.id];
     setSubTenant(tenant);
+    setEditModalTab('subscription');
     setSubForm({
       plan: tenant.plan,
       maxUsers: usage?.users.max ?? (tenant.plan === 'free' ? 1 : 999999),
@@ -764,11 +772,6 @@ export default function SystemAdminDashboard() {
     setError(null);
   };
 
-  const closeSubscriptionEdit = () => {
-    setSubTenant(null);
-    setSubSubmitting(false);
-  };
-
   const handleSubscriptionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subTenant) return;
@@ -776,7 +779,7 @@ export default function SystemAdminDashboard() {
     setError(null);
     try {
       await updateTenantSubscription(subTenant.id, subForm);
-      closeSubscriptionEdit();
+      closeEditModal();
       await load(page, pageSize);
     } catch (err: any) {
       setError(err?.message || 'Cập nhật gói thất bại.');
@@ -787,6 +790,7 @@ export default function SystemAdminDashboard() {
 
   const openFeatureFlags = async (tenant: Tenant) => {
     setFeatureTenant(tenant);
+    setEditModalTab('features');
     setFeatureFlags(DEFAULT_TENANT_FEATURE_FLAGS);
     setFeatureLoading(true);
     setError(null);
@@ -800,11 +804,6 @@ export default function SystemAdminDashboard() {
     }
   };
 
-  const closeFeatureFlags = () => {
-    setFeatureTenant(null);
-    setFeatureSubmitting(false);
-  };
-
   const handleFeatureToggle = (key: keyof TenantFeatureFlags, value: boolean) => {
     setFeatureFlags(prev => ({ ...prev, [key]: value }));
   };
@@ -816,7 +815,7 @@ export default function SystemAdminDashboard() {
     setError(null);
     try {
       await updateTenantFeatureFlags(featureTenant.id, featureFlags);
-      closeFeatureFlags();
+      closeEditModal();
     } catch (err: any) {
       setError(err?.message || 'Cập nhật feature flags thất bại.');
     } finally {
@@ -1630,83 +1629,21 @@ export default function SystemAdminDashboard() {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => toggleUsage(t)}
-                              className="px-3 py-1.5 text-sm text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg"
-                            >
-                              {isExpanded ? 'Ẩn usage' : 'Usage'}
-                            </button>
-                            <button
-                              onClick={() => handleBackup(t)}
-                              disabled={backingUpTenantId === t.id}
-                              className="px-3 py-1.5 text-sm text-cyan-700 bg-cyan-50 hover:bg-cyan-100 rounded-lg disabled:opacity-60"
-                            >
-                              {backingUpTenantId === t.id ? 'Đang backup...' : 'Backup'}
-                            </button>
-                            <button
-                              onClick={() => openRestore(t)}
-                              disabled={restoreSubmitting && restoreTenant?.id === t.id}
-                              className="px-3 py-1.5 text-sm text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg disabled:opacity-60"
-                            >
-                              Restore
-                            </button>
-                            <button
-                              onClick={() => handleResetDemo(t)}
-                              disabled={resettingTenantId === t.id}
-                              className="px-3 py-1.5 text-sm text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg disabled:opacity-60"
-                            >
-                              {resettingTenantId === t.id ? 'Đang reset...' : 'Reset demo'}
-                            </button>
-                            <button
-                              onClick={() => handleLoginAs(t)}
-                              disabled={impersonatingTenantId === t.id || t.status !== 'active'}
-                              title={t.status !== 'active' ? 'Chỉ impersonate tenant đang hoạt động' : 'Đăng nhập với tư cách admin tenant'}
-                              className="px-3 py-1.5 text-sm text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {impersonatingTenantId === t.id ? 'Đang xử lý...' : 'Login as'}
-                            </button>
-                            <button
-                              onClick={() => openEdit(t)}
-                              className="px-3 py-1.5 text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg"
-                            >
-                              Sửa
-                            </button>
-                            <button
-                              onClick={() => openSubscriptionEdit(t)}
-                              className="px-3 py-1.5 text-sm text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg"
-                            >
-                              Gói
-                            </button>
-                            <button
-                              onClick={() => openFeatureFlags(t)}
-                              className="px-3 py-1.5 text-sm text-green-700 bg-green-50 hover:bg-green-100 rounded-lg"
-                            >
-                              Tính năng
-                            </button>
-                            {t.status === 'archived' ? (
-                              <button
-                                onClick={() => handleRestore(t)}
-                                className="px-3 py-1.5 text-sm text-green-700 bg-green-50 hover:bg-green-100 rounded-lg"
-                              >
-                                Khôi phục
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleArchive(t)}
-                                className="px-3 py-1.5 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
-                              >
-                                Lưu trữ
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleDelete(t)}
-                              disabled={deletingTenantId === t.id}
-                              className="px-3 py-1.5 text-sm text-red-700 bg-red-50 hover:bg-red-100 rounded-lg disabled:opacity-60"
-                            >
-                              {deletingTenantId === t.id ? 'Đang xóa...' : 'Xóa'}
-                            </button>
-                          </div>
+                          <TenantRowActions
+                            tenant={t}
+                            isExpanded={isExpanded}
+                            onUsage={() => toggleUsage(t)}
+                            onEdit={() => openEdit(t)}
+                            onBackup={() => handleBackup(t)}
+                            onRestore={() => openRestore(t)}
+                            onResetDemo={() => handleResetDemo(t)}
+                            onArchive={() => handleArchive(t)}
+                            onDelete={() => handleDelete(t)}
+                            backingUp={backingUpTenantId === t.id}
+                            restoring={restoreSubmitting && restoreTenant?.id === t.id}
+                            resetting={resettingTenantId === t.id}
+                            deleting={deletingTenantId === t.id}
+                          />
                         </td>
                       </tr>
                       {isExpanded && (
@@ -2327,17 +2264,43 @@ export default function SystemAdminDashboard() {
 
     {activeTab === 'readReplicaQueue' && <ReadReplicaQueueManager />}
 
-      {/* Edit modal */}
-      {editTenant && (
+      {/* Edit / Subscription / Feature flags tabbed modal */}
+      {(editTenant || subTenant || featureTenant) && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={(e) => {
-            if (e.currentTarget === e.target && !editSubmitting) closeEdit();
+            if (e.currentTarget === e.target && !editSubmitting && !subSubmitting && !featureSubmitting) closeEditModal();
           }}
         >
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Sửa cửa hàng</h3>
-            <form onSubmit={handleEditSubmit} className="space-y-4">
+          <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Sửa cửa hàng — {(editTenant || subTenant || featureTenant)!.name}
+            </h3>
+            <div className="flex border-b border-gray-200 mb-4">
+              <button
+                type="button"
+                onClick={() => openEdit((editTenant || subTenant || featureTenant)!)}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${editModalTab === 'info' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-600 hover:text-gray-900'}`}
+              >
+                Thông tin
+              </button>
+              <button
+                type="button"
+                onClick={() => openSubscriptionEdit((editTenant || subTenant || featureTenant)!)}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${editModalTab === 'subscription' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-600 hover:text-gray-900'}`}
+              >
+                Gói
+              </button>
+              <button
+                type="button"
+                onClick={() => openFeatureFlags((editTenant || subTenant || featureTenant)!)}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${editModalTab === 'features' ? 'border-green-600 text-green-600' : 'border-transparent text-gray-600 hover:text-gray-900'}`}
+              >
+                Tính năng
+              </button>
+            </div>
+            {editModalTab === 'info' && editTenant && (
+              <form onSubmit={handleEditSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Tên cửa hàng</label>
                 <input
@@ -2408,7 +2371,7 @@ export default function SystemAdminDashboard() {
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={closeEdit}
+                  onClick={closeEditModal}
                   disabled={editSubmitting}
                   className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg disabled:opacity-60"
                 >
@@ -2423,20 +2386,8 @@ export default function SystemAdminDashboard() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Subscription edit modal */}
-      {subTenant && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e) => {
-            if (e.currentTarget === e.target && !subSubmitting) closeSubscriptionEdit();
-          }}
-        >
-          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Nâng/hạ gói — {subTenant.name}</h3>
+          )}
+          {editModalTab === 'subscription' && subTenant && (
             <form onSubmit={handleSubscriptionSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Gói</label>
@@ -2526,7 +2477,7 @@ export default function SystemAdminDashboard() {
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={closeSubscriptionEdit}
+                  onClick={closeEditModal}
                   disabled={subSubmitting}
                   className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg disabled:opacity-60"
                 >
@@ -2541,26 +2492,13 @@ export default function SystemAdminDashboard() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-)}
-
-      {/* Feature flags modal */}
-      {featureTenant && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e) => {
-            if (e.currentTarget === e.target && !featureSubmitting) closeFeatureFlags();
-          }}
-        >
-          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Feature flags — {featureTenant.name}
-            </h3>
-            {featureLoading ? (
-              <p className="text-gray-600">Đang tải...</p>
-            ) : (
-              <form onSubmit={handleFeatureSubmit} className="space-y-3">
+          )}
+          {editModalTab === 'features' && featureTenant && (
+            <>
+              {featureLoading ? (
+                <p className="text-gray-600">Đang tải...</p>
+              ) : (
+                <form onSubmit={handleFeatureSubmit} className="space-y-3">
                 {TENANT_FEATURE_FLAG_LIST.map(f => (
                   <label
                     key={f.key}
@@ -2582,7 +2520,7 @@ export default function SystemAdminDashboard() {
                 <div className="flex justify-end gap-2 pt-2">
                   <button
                     type="button"
-                    onClick={closeFeatureFlags}
+                    onClick={closeEditModal}
                     disabled={featureSubmitting}
                     className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg disabled:opacity-60"
                   >
@@ -2598,10 +2536,160 @@ export default function SystemAdminDashboard() {
                 </div>
               </form>
             )}
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
+    </div>
+  )}
       {confirmDialog}
     </AdminShell>
+  );
+}
+
+// Action column for a tenant row: usage, edit, and grouped dropdown.
+// ponytail: inline component because it is only used in this page; keeps the diff local.
+interface TenantRowActionsProps {
+  tenant: Tenant;
+  isExpanded: boolean;
+  onUsage: () => void;
+  onEdit: () => void;
+  onBackup: () => void;
+  onRestore: () => void;
+  onResetDemo: () => void;
+  onArchive: () => void;
+  onDelete: () => void;
+  backingUp: boolean;
+  restoring: boolean;
+  resetting: boolean;
+  deleting: boolean;
+}
+
+function TenantRowActions({
+  tenant,
+  isExpanded,
+  onUsage,
+  onEdit,
+  onBackup,
+  onRestore,
+  onResetDemo,
+  onArchive,
+  onDelete,
+  backingUp,
+  restoring,
+  resetting,
+  deleting,
+}: TenantRowActionsProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [open]);
+
+  const isArchived = tenant.status === 'archived';
+
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={onUsage}
+        aria-label={isExpanded ? 'Ẩn usage' : 'Xem usage'}
+        title={isExpanded ? 'Ẩn usage' : 'Xem usage'}
+        className="w-11 h-11 flex items-center justify-center text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+      >
+        <Activity size={18} />
+      </button>
+      <button
+        type="button"
+        onClick={onEdit}
+        aria-label="Sửa cửa hàng"
+        title="Sửa cửa hàng"
+        className="w-11 h-11 flex items-center justify-center text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <Pencil size={18} />
+      </button>
+      <div ref={ref} className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen(prev => !prev)}
+          aria-label="Thêm thao tác"
+          title="Thêm thao tác"
+          className="w-11 h-11 flex items-center justify-center text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
+        >
+          <MoreHorizontal size={18} />
+        </button>
+        {open && (
+          <div className="absolute right-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20 origin-top-right">
+            <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+              <Database size={12} />
+              Quản lý dữ liệu
+            </div>
+            <button
+              type="button"
+              onClick={() => { setOpen(false); onBackup(); }}
+              disabled={backingUp}
+              className="w-full text-left px-3 py-2 min-h-[44px] text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+            >
+              <Download size={14} className="text-cyan-600" />
+              {backingUp ? 'Đang backup...' : 'Backup'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setOpen(false); onRestore(); }}
+              disabled={restoring}
+              className="w-full text-left px-3 py-2 min-h-[44px] text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+            >
+              <Upload size={14} className="text-indigo-600" />
+              Restore
+            </button>
+            <button
+              type="button"
+              onClick={() => { setOpen(false); onResetDemo(); }}
+              disabled={resetting}
+              className="w-full text-left px-3 py-2 min-h-[44px] text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+            >
+              <RotateCcw size={14} className="text-amber-600" />
+              {resetting ? 'Đang reset...' : 'Reset demo'}
+            </button>
+            <div className="my-1 border-t border-gray-100" />
+            <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+              <Archive size={12} />
+              Vòng đời
+            </div>
+            <button
+              type="button"
+              onClick={() => { setOpen(false); onArchive(); }}
+              className="w-full text-left px-3 py-2 min-h-[44px] text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+            >
+              <Archive size={14} className={isArchived ? 'text-green-600' : 'text-gray-500'} />
+              {isArchived ? 'Khôi phục' : 'Lưu trữ'}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setOpen(false); onDelete(); }}
+              disabled={deleting}
+              className="w-full text-left px-3 py-2 min-h-[44px] text-sm text-red-700 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50"
+            >
+              <Trash2 size={14} />
+              {deleting ? 'Đang xóa...' : 'Xóa vĩnh viễn'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
