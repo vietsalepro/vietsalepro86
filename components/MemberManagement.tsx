@@ -14,7 +14,6 @@ import { TextInput } from './TextInput';
 import { SelectInput } from './SelectInput';
 import { ActionButton, PrimaryButton } from './ActionButton';
 import { StatusBadge, StatusBadgeType } from './StatusBadge';
-import { MasterModal } from './MasterModal';
 import { useDebounce } from '../hooks/useDebounce';
 import { useConfirmDialog } from '../hooks/useConfirmDialog';
 import { useToast } from './ToastContainer';
@@ -31,6 +30,8 @@ import {
   resetMemberPassword,
 } from '../services/tenantService';
 import { MemberInviteModal } from './MemberManagement/MemberInviteModal';
+import { MemberBulkActions } from './MemberManagement/MemberBulkActions';
+import { MemberDetailDrawer } from './MemberManagement/MemberDetailDrawer';
 
 const ROLES: TenantRole[] = ['admin', 'cashier', 'inventory_manager', 'accountant'];
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
@@ -155,6 +156,16 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
   useEffect(() => {
     loadMembers();
   }, [loadMembers]);
+
+  // Keep the open detail drawer in sync with the latest loaded data.
+  useEffect(() => {
+    if (detailMember) {
+      const updated = members.find((m) => m.id === detailMember.id);
+      if (updated && updated !== detailMember) {
+        setDetailMember(updated);
+      }
+    }
+  }, [members, detailMember]);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(totalCount / pageSize)), [totalCount, pageSize]);
 
@@ -418,14 +429,22 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
         </div>
       </div>
       <div className="flex items-center justify-end">
-        <PrimaryButton
-          size="md"
-          icon={<UserPlus size={18} />}
-          onClick={() => setInviteOpen(true)}
-          disabled={!tenantId}
-        >
-          Mời thành viên
-        </PrimaryButton>
+        <div className="flex items-center gap-2">
+          <MemberBulkActions
+            tenantId={tenantId}
+            selectedMembers={members.filter((m) => selectedIds.includes(m.id))}
+            onAction={loadMembers}
+            disabled={loading}
+          />
+          <PrimaryButton
+            size="md"
+            icon={<UserPlus size={18} />}
+            onClick={() => setInviteOpen(true)}
+            disabled={!tenantId}
+          >
+            Mời thành viên
+          </PrimaryButton>
+        </div>
       </div>
     </div>
   ), [search, roleFilter, statusFilter, activeFilter, tenantId, roleOptions, statusOptions, activeOptions]);
@@ -475,68 +494,18 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
       {inviteOpen && (
         <MemberInviteModal
           tenantId={tenantId}
+          existingMembers={members}
           onClose={() => setInviteOpen(false)}
           onInvited={loadMembers}
         />
       )}
-      {/* ponytail: simple detail modal; P8 will upgrade to MemberDetailDrawer. */}
       {detailMember && (
-        <MasterModal
-          isOpen
+        <MemberDetailDrawer
+          member={detailMember}
+          tenantId={tenantId}
           onClose={() => setDetailMember(null)}
-          title="Chi tiết thành viên"
-          size="sm"
-          footer={
-            <div className="flex justify-end">
-              <ActionButton variant="ghost" onClick={() => setDetailMember(null)}>
-                Đóng
-              </ActionButton>
-            </div>
-          }
-        >
-          <div className="space-y-3 text-sm">
-            <div className="grid grid-cols-3 gap-2">
-              <span className="text-gray-500">Email</span>
-              <span className="col-span-2 font-medium text-gray-900">{detailMember.email || detailMember.userId}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="text-gray-500">Vai trò</span>
-              <span className="col-span-2">
-                <StatusBadge label={roleLabel(detailMember.role)} type={roleBadgeType(detailMember.role)} size="sm" />
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="text-gray-500">Trạng thái</span>
-              <span className="col-span-2">
-                <StatusBadge label={statusLabel(detailMember.status)} type={statusBadgeType(detailMember.status)} size="sm" />
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="text-gray-500">Kích hoạt</span>
-              <span className="col-span-2">{detailMember.isActive ? 'Có' : 'Không'}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="text-gray-500">Mời bởi</span>
-              <span className="col-span-2">{detailMember.invitedByEmail || detailMember.invitedBy || '-'}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="text-gray-500">Ngày mời</span>
-              <span className="col-span-2">{formatDate(detailMember.invitedAt || detailMember.createdAt)}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="text-gray-500">Chấp nhận</span>
-              <span className="col-span-2">{formatDate(detailMember.acceptedAt)}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="text-gray-500">Đăng nhập cuối</span>
-              <span className="col-span-2">{formatDate(detailMember.lastSignInAt)}</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <span className="text-gray-500">Xác nhận email</span>
-              <span className="col-span-2">{formatDate(detailMember.confirmedAt)}</span>
-            </div>
-          </div>
-        </MasterModal>
+          onChanged={loadMembers}
+        />
       )}
       {confirmDialog}
     </div>

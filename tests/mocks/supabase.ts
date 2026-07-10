@@ -691,6 +691,7 @@ const rpc = async (name: string, params: Record<string, any>) => {
         ...m,
         email: `user-${m.user_id}@example.com`,
         invited_by_email: m.invited_by ? `inviter-${m.invited_by}@example.com` : null,
+        is_owner: tenant.owner_id === m.user_id,
       }));
     if (params.p_role) {
       rows = rows.filter(m => m.role === params.p_role);

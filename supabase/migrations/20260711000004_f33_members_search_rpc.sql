@@ -55,6 +55,11 @@ BEGIN
     'SELECT COALESCE(json_agg(row_to_json(t)), ''[]''::json)
      FROM (
        SELECT
+         tm.id,
+         tm.tenant_id,
+         tm.user_id,
+         tm.role,
+         t.owner_id = tm.user_id AS is_owner,
          u.email,
          inviter.email AS invited_by_email,
          tm.status,
@@ -66,6 +71,7 @@ BEGIN
          tm.created_at,
          tm.updated_at
        FROM public.tenant_memberships tm
+       JOIN public.tenants t ON t.id = tm.tenant_id
        LEFT JOIN auth.users u ON u.id = tm.user_id
        LEFT JOIN auth.users inviter ON inviter.id = tm.invited_by
        WHERE tm.tenant_id = $1

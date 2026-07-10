@@ -70,6 +70,7 @@ export interface MemberWithEmail extends TenantMembership {
   acceptedAt?: string;
   lastSignInAt?: string;
   confirmedAt?: string;
+  isOwner?: boolean;
 }
 
 export interface SearchMembersParams {

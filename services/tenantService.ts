@@ -333,6 +333,7 @@ const mapMemberWithEmailFromDB = (row: any): MemberWithEmail => ({
   acceptedAt: row.accepted_at,
   lastSignInAt: row.last_sign_in_at,
   confirmedAt: row.confirmed_at,
+  isOwner: row.is_owner,
 });
 
 export async function getTenantMembersWithEmail(tenantId: string): Promise<MemberWithEmail[]> {
