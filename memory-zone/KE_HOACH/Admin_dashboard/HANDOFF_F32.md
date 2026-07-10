@@ -390,7 +390,7 @@ Nếu có lỗi nghiêm trọng trên production:
 - [ ] Vercel deployment URL / commit: cần deploy frontend
 - [ ] Production smoke test result: cần thực hiện trên production sau deploy
 - [ ] Test data cleaned up: cần dọn dẹp sau smoke test
-
+- [x] Final commit hash (code + test): `eef3334`
 
 ---
 
