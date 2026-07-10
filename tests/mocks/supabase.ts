@@ -444,7 +444,10 @@ const rpc = async (name: string, params: Record<string, any>) => {
         tenant_id: tenant.id,
         user_id: ownerId,
         role: 'admin',
+        status: 'active',
+        is_active: true,
         invited_by: null,
+        invited_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
@@ -1922,7 +1925,9 @@ const functionsInvoke = async (name: string, { body }: { body: any }) => {
     if (tenant.status !== 'active') return { data: { error: 'Tenant không hoạt động' }, error: null };
 
     const sub = store.tenant_subscriptions.find(s => s.tenant_id === tenant_id);
-    const memberCount = store.tenant_memberships.filter(m => m.tenant_id === tenant_id).length;
+    const memberCount = store.tenant_memberships.filter(
+      m => m.tenant_id === tenant_id && ['pending', 'active'].includes(m.status)
+    ).length;
     if (sub && memberCount >= sub.max_users) {
       return { data: { error: 'Đã đạt giới hạn số user của gói dịch vụ' }, error: null };
     }
@@ -1940,7 +1945,10 @@ const functionsInvoke = async (name: string, { body }: { body: any }) => {
       tenant_id,
       user_id: user.id,
       role,
+      status: 'pending',
+      is_active: true,
       invited_by: currentUserId,
+      invited_at: new Date().toISOString(),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };

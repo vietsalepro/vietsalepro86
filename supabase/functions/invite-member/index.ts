@@ -286,6 +286,20 @@ serve(async (req) => {
     return jsonResponse(response, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : (err && typeof err === 'object' && 'message' in err ? (err as { message: string }).message : 'Unknown error');
+    // ponytail: map known business-rule exceptions to 4xx so the UI shows a useful
+    // message instead of the generic "Edge Function returned a non-2xx status code".
+    if (message.includes('Đã đạt giới hạn')) {
+      return jsonResponse({ error: message }, 403);
+    }
+    if (
+      message.includes('Tenant không hoạt động') ||
+      message.includes('Không tìm thấy subscription') ||
+      message.includes('already_member') ||
+      message.includes('Không thể xóa') ||
+      message.includes('Không thể hạ')
+    ) {
+      return jsonResponse({ error: message }, 400);
+    }
     return jsonResponse({ error: message }, 500);
   }
 });

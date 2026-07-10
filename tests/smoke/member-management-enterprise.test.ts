@@ -51,6 +51,10 @@ describe('smoke: member management enterprise', () => {
       cashier.status = 'pending';
       cashier.is_active = false;
     }
+    const inventory = memberships.find(m => m.role === 'inventory_manager');
+    if (inventory) {
+      inventory.status = 'active';
+    }
 
     const byRole = await searchTenantMembers({ tenantId: tenant.id, role: 'cashier' });
     expect(byRole.totalCount).toBe(1);

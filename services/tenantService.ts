@@ -454,6 +454,22 @@ export async function toggleMemberActive(tenantId: string, userId: string, isAct
   return mapMembershipFromDB(data);
 }
 
+const parseFunctionError = async (error: any): Promise<string> => {
+  if (
+    error && typeof error === 'object' &&
+    (error.name === 'FunctionsHttpError' || error.constructor?.name === 'FunctionsHttpError') &&
+    typeof error.context?.json === 'function'
+  ) {
+    try {
+      const body = await error.context.json();
+      return body?.error || body?.message || error.message;
+    } catch {
+      return error.message;
+    }
+  }
+  return error?.message || 'Mời thành viên thất bại';
+};
+
 export async function inviteMemberByEmail(
   tenantId: string,
   email: string,
@@ -462,7 +478,9 @@ export async function inviteMemberByEmail(
   const { data, error } = await supabase.functions.invoke<{ success: boolean; message?: string; emailProviderConfigured?: boolean; error?: string }>('invite-member', {
     body: { tenant_id: tenantId, email, role },
   });
-  if (error) throw error;
+  if (error) {
+    throw new Error(await parseFunctionError(error));
+  }
   if (!data || typeof data !== 'object' || !data.success) {
     throw new Error(data?.error || data?.message || 'Mời thành viên thất bại');
   }
