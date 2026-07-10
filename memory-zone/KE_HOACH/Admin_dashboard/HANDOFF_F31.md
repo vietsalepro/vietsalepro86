@@ -306,7 +306,7 @@ Thêm `CreateTenantResult` và `createTenantWithCredentials` vào import từ `s
 - [x] Login-as from result card tested: PASS (reuse handleLoginAs hiện có)
 - [x] `npm run lint`: PASS
 - [x] `npx vitest run`: PASS (237 tests)
-- [x] Commit hash: f11f0d0
+- [x] Commit hash: dc9971f
 
 ---
 
