@@ -350,6 +350,7 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
               onClick={() => setDetailMember(m)}
               disabled={isBusy}
               aria-label="Chi tiết"
+              title="Chi tiết"
             />
             <ActionButton
               variant="ghost"
@@ -359,6 +360,7 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
               loading={isBusy}
               disabled={isBusy}
               aria-label="Reset mật khẩu"
+              title="Reset mật khẩu"
             />
             <ActionButton
               variant="ghost"
@@ -367,6 +369,7 @@ export const MemberManagement: React.FC<MemberManagementProps> = ({
               onClick={() => handleRemoveMember(m.userId, m.email)}
               disabled={isBusy}
               aria-label="Xóa"
+              title="Xóa"
             />
           </div>
         );

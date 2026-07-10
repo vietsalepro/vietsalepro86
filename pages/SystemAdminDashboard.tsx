@@ -32,7 +32,6 @@ import ComplianceManager from '../components/ComplianceManager';
 import WhiteLabelManager from '../components/WhiteLabelManager';
 import ReadReplicaQueueManager from '../components/ReadReplicaQueueManager';
 import { MemberManagement } from '../components/MemberManagement';
-import { DataGrid, DataGridColumn } from '../components/DataGrid';
 import './Dashboard.css';
 import {
   Tenant,
@@ -393,7 +392,6 @@ export default function SystemAdminDashboard() {
   const [memberTenantOptions, setMemberTenantOptions] = useState<Tenant[]>([]);
   const [memberTenantSearchLoading, setMemberTenantSearchLoading] = useState(false);
   const [memberTenantSearchError, setMemberTenantSearchError] = useState<string | null>(null);
-  const [selectedMemberTenant, setSelectedMemberTenant] = useState<Tenant | null>(null);
   const [memberTenantPage, setMemberTenantPage] = useState(1);
   const [memberTenantTotal, setMemberTenantTotal] = useState(0);
   const [memberTenantRefetch, setMemberTenantRefetch] = useState(0);
@@ -1184,60 +1182,8 @@ export default function SystemAdminDashboard() {
 
   const selectMemberTenant = useCallback((t: Tenant) => {
     setMemberTenantId(t.id);
-    setSelectedMemberTenant(t);
     setMemberTenantSearchError(null);
   }, []);
-
-  const memberTenantColumns = useMemo<DataGridColumn<Tenant>[]>(() => [
-    {
-      key: 'name',
-      label: 'Tên',
-      render: (t) => <span className="text-sm text-gray-900">{t.name}</span>,
-    },
-    {
-      key: 'subdomain',
-      label: 'Subdomain',
-      render: (t) => <span className="text-sm text-gray-600">{t.subdomain}</span>,
-    },
-    {
-      key: 'adminEmail',
-      label: 'Email admin',
-      render: (t) => <span className="text-sm text-gray-600">{t.adminEmail || '-'}</span>,
-    },
-    {
-      key: 'plan',
-      label: 'Gói',
-      render: (t) => <span className="text-sm text-gray-600 uppercase">{planLabel(t.plan)}</span>,
-    },
-    {
-      key: 'status',
-      label: 'Trạng thái',
-      render: (t) => (
-        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${statusClass(t.status)}`}>
-          {statusLabel(t.status)}
-        </span>
-      ),
-    },
-    {
-      key: 'actions',
-      label: 'Thao tác',
-      width: '100px',
-      align: 'right',
-      sticky: 'right',
-      render: (t) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            selectMemberTenant(t);
-          }}
-          className="px-3 py-1.5 text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg"
-        >
-          Chọn
-        </button>
-      ),
-    },
-  ], [selectMemberTenant]);
 
   const tabs: TabItem[] = [
     { id: 'overview', label: 'Tổng quan', icon: Home },
@@ -1837,60 +1783,109 @@ export default function SystemAdminDashboard() {
 
     {activeTab === 'members' && (
       <div className="space-y-6">
-        {/* Tenant grid */}
+        {/* Tenant list with inline member management */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <DataGrid
-            embedded
-            data={memberTenantOptions}
-            columns={memberTenantColumns}
-            keyExtractor={(t) => t.id}
-            loading={memberTenantSearchLoading}
-            error={memberTenantSearchError}
-            onRetry={() => setMemberTenantRefetch((n) => n + 1)}
-            onRowClick={selectMemberTenant}
-            selectedRows={memberTenantId ? [memberTenantId] : []}
-            onSelectionChange={(ids) => {
-              const id = ids[0];
-              const t = memberTenantOptions.find((x) => x.id === id);
-              if (t) selectMemberTenant(t);
-            }}
-            pagination={{
-              currentPage: memberTenantPage,
-              totalPages: Math.max(1, Math.ceil(memberTenantTotal / MEMBER_TENANT_PAGE_SIZE)),
-              totalCount: memberTenantTotal,
-              pageSize: MEMBER_TENANT_PAGE_SIZE,
-              onPageChange: setMemberTenantPage,
-              showInfo: true,
-            }}
-            toolbar={{
-              searchValue: memberTenantSearch,
-              onSearchChange: (value) => setMemberTenantSearch(value),
-              searchPlaceholder: 'Tìm theo tên hoặc subdomain...',
-              showFilter: false,
-            }}
-            emptyTitle="Không tìm thấy cửa hàng"
-            emptyDescription="Thử tìm kiếm với từ khóa khác."
-            ariaLabel="Danh sách cửa hàng"
+          <div className="p-4 border-b border-gray-100">
+            <input
+              type="text"
+              value={memberTenantSearch}
+              onChange={(e) => setMemberTenantSearch(e.target.value)}
+              placeholder="Tìm theo tên hoặc subdomain..."
+              className="w-full md:w-80 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-sm font-medium text-gray-600">Tên</th>
+                  <th className="px-6 py-3 text-sm font-medium text-gray-600">Subdomain</th>
+                  <th className="px-6 py-3 text-sm font-medium text-gray-600">Email admin</th>
+                  <th className="px-6 py-3 text-sm font-medium text-gray-600">Gói</th>
+                  <th className="px-6 py-3 text-sm font-medium text-gray-600">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {memberTenantSearchLoading && memberTenantOptions.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                      Đang tải...
+                    </td>
+                  </tr>
+                ) : memberTenantSearchError ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center">
+                      <p className="text-sm text-red-600">{memberTenantSearchError}</p>
+                      <button
+                        type="button"
+                        onClick={() => setMemberTenantRefetch((n) => n + 1)}
+                        className="mt-2 text-sm text-blue-600 hover:underline"
+                      >
+                        Thử lại
+                      </button>
+                    </td>
+                  </tr>
+                ) : memberTenantOptions.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                      Không tìm thấy cửa hàng nào.
+                    </td>
+                  </tr>
+                ) : (
+                  memberTenantOptions.map((t) => {
+                    const isExpanded = memberTenantId === t.id;
+                    return (
+                      <React.Fragment key={t.id}>
+                        <tr>
+                          <td className="px-6 py-4">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isExpanded) {
+                                  setMemberTenantId('');
+                                } else {
+                                  selectMemberTenant(t);
+                                }
+                              }}
+                              className="flex items-center gap-2 text-sm font-medium text-gray-900 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                              aria-expanded={isExpanded}
+                            >
+                              <span className="text-gray-500" aria-hidden="true">
+                                {isExpanded ? '▼' : '▶'}
+                              </span>
+                              {t.name}
+                            </button>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">{t.subdomain}</td>
+                          <td className="px-6 py-4 text-sm text-gray-600">{t.adminEmail || '-'}</td>
+                          <td className="px-6 py-4 text-sm text-gray-600 uppercase">{planLabel(t.plan)}</td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${statusClass(t.status)}`}>
+                              {statusLabel(t.status)}
+                            </span>
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr>
+                            <td colSpan={5} className="px-6 py-4 bg-gray-50">
+                              <MemberManagement tenantId={t.id} />
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+          <Pagination
+            page={memberTenantPage}
+            pageSize={MEMBER_TENANT_PAGE_SIZE}
+            total={memberTenantTotal}
+            onPageChange={setMemberTenantPage}
           />
         </div>
-        {selectedMemberTenant && (
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span className="font-medium text-gray-800">Đã chọn: {selectedMemberTenant.name} ({selectedMemberTenant.subdomain})</span>
-            <button
-              type="button"
-              onClick={() => {
-                setMemberTenantId('');
-                setSelectedMemberTenant(null);
-                setMemberTenantSearch('');
-                setMemberTenantPage(1);
-              }}
-              className="text-blue-600 hover:underline"
-            >
-              Xóa
-            </button>
-          </div>
-        )}
-        <MemberManagement tenantId={memberTenantId} />
       </div>
     )}
 
