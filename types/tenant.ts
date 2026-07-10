@@ -53,6 +53,8 @@ export interface TenantMembership {
   tenantId: string;
   userId: string;
   role: TenantRole;
+  status?: 'pending' | 'active' | 'inactive';
+  isActive?: boolean;
   invitedBy?: string;
   impersonatedBy?: string;
   impersonatedAt?: string;
@@ -64,6 +66,27 @@ export interface TenantMembership {
 export interface MemberWithEmail extends TenantMembership {
   email?: string;
   invitedByEmail?: string;
+  invitedAt?: string;
+  acceptedAt?: string;
+  lastSignInAt?: string;
+  confirmedAt?: string;
+}
+
+export interface SearchMembersParams {
+  tenantId: string;
+  search?: string;
+  role?: TenantRole | null;
+  status?: 'pending' | 'active' | 'inactive' | null;
+  isActive?: boolean | null;
+  sortBy?: 'email' | 'role' | 'status' | 'created_at' | 'last_sign_in_at';
+  sortDir?: 'asc' | 'desc';
+  page?: number;
+  pageSize?: number;
+}
+
+export interface SearchMembersResult {
+  members: MemberWithEmail[];
+  totalCount: number;
 }
 
 export interface TenantSubscription {

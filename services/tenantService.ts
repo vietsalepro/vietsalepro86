@@ -16,6 +16,8 @@ import {
   DEFAULT_TENANT_FEATURE_FLAGS,
   StorageUsage,
   CreateTenantResult,
+  SearchMembersParams,
+  SearchMembersResult,
 } from '../types/tenant';
 
 // --- Mappers ---
@@ -46,6 +48,8 @@ const mapMembershipFromDB = (row: any): TenantMembership => ({
   tenantId: row.tenant_id,
   userId: row.user_id,
   role: row.role,
+  status: row.status,
+  isActive: row.is_active,
   invitedBy: row.invited_by,
   impersonatedBy: row.impersonated_by,
   impersonatedAt: row.impersonated_at,
@@ -325,6 +329,10 @@ const mapMemberWithEmailFromDB = (row: any): MemberWithEmail => ({
   ...mapMembershipFromDB(row),
   email: row.email,
   invitedByEmail: row.invited_by_email,
+  invitedAt: row.invited_at,
+  acceptedAt: row.accepted_at,
+  lastSignInAt: row.last_sign_in_at,
+  confirmedAt: row.confirmed_at,
 });
 
 export async function getTenantMembersWithEmail(tenantId: string): Promise<MemberWithEmail[]> {
@@ -333,20 +341,131 @@ export async function getTenantMembersWithEmail(tenantId: string): Promise<Membe
   return (data || []).map(mapMemberWithEmailFromDB);
 }
 
+export async function searchTenantMembers(params: SearchMembersParams): Promise<SearchMembersResult> {
+  const { data, error } = await supabase.rpc('search_tenant_members', {
+    p_tenant_id: params.tenantId,
+    p_search: params.search || null,
+    p_role: params.role || null,
+    p_status: params.status || null,
+    p_is_active: params.isActive ?? null,
+    p_sort_by: params.sortBy || 'created_at',
+    p_sort_dir: params.sortDir || 'desc',
+    p_page: params.page ?? 1,
+    p_page_size: params.pageSize ?? 20,
+  });
+  if (error) throw error;
+  const result = data as { items: any[]; total_count: number };
+  return {
+    members: (result.items || []).map(mapMemberWithEmailFromDB),
+    totalCount: result.total_count || 0,
+  };
+}
+
+export interface BulkInviteSummary {
+  succeeded: number;
+  failed: number;
+  alreadyMember: number;
+  emailProviderNotConfigured: number;
+  errors: { email: string; message: string }[];
+}
+
+export async function bulkInviteMembers(
+  tenantId: string,
+  emails: string[],
+  role: TenantRole,
+  maxConcurrency = 3
+): Promise<BulkInviteSummary> {
+  if (!Array.isArray(emails)) {
+    throw new Error('emails phải là một mảng');
+  }
+  const uniqueEmails = [...new Set(emails.map((e) => e.trim().toLowerCase()))].filter(Boolean);
+  if (uniqueEmails.length > 50) {
+    throw new Error('Tối đa 50 email mỗi lần mời');
+  }
+  const summary: BulkInviteSummary = {
+    succeeded: 0,
+    failed: 0,
+    alreadyMember: 0,
+    emailProviderNotConfigured: 0,
+    errors: [],
+  };
+
+  const inviteOne = async (email: string) => {
+    try {
+      const res = await inviteMemberByEmail(tenantId, email, role);
+      if (res.success && res.emailProviderConfigured === false) {
+        summary.emailProviderNotConfigured++;
+      } else if (res.success) {
+        summary.succeeded++;
+      } else {
+        summary.failed++;
+        summary.errors.push({ email, message: res.message || 'Mời thành viên thất bại' });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const lower = message.toLowerCase();
+      if (lower.includes('already_member') || lower.includes('đã là thành viên')) {
+        summary.alreadyMember++;
+      } else {
+        summary.failed++;
+        summary.errors.push({ email, message });
+      }
+    }
+  };
+
+  // ponytail: simple async pool; maxConcurrency workers drain one shared queue.
+  const queue = [...uniqueEmails];
+  const workers = Array.from({ length: Math.max(1, maxConcurrency) }, () =>
+    (async () => {
+      while (queue.length > 0) {
+        const email = queue.shift();
+        if (email) await inviteOne(email);
+      }
+    })()
+  );
+  await Promise.all(workers);
+  return summary;
+}
+
+export async function resendMemberInvite(tenantId: string, userId: string) {
+  const { data, error } = await supabase
+    .from('tenant_memberships')
+    .select('status')
+    .eq('tenant_id', tenantId)
+    .eq('user_id', userId)
+    .single();
+  if (error) throw error;
+  if (data?.status !== 'pending') {
+    throw new Error('Chỉ có thể gửi lại lời mời cho thành viên đang ở trạng thái pending');
+  }
+  return resetMemberPassword(tenantId, userId);
+}
+
+export async function toggleMemberActive(tenantId: string, userId: string, isActive: boolean): Promise<TenantMembership> {
+  const { data, error } = await supabase
+    .from('tenant_memberships')
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+    .eq('tenant_id', tenantId)
+    .eq('user_id', userId)
+    .select()
+    .single();
+  if (error) throw error;
+  return mapMembershipFromDB(data);
+}
 
 export async function inviteMemberByEmail(
   tenantId: string,
   email: string,
   role: TenantRole
-): Promise<{ success: boolean; message?: string }> {
-  const { data, error } = await supabase.functions.invoke<{ success: boolean; message?: string; error?: string }>('invite-member', {
+): Promise<{ success: boolean; message?: string; emailProviderConfigured?: boolean }> {
+  const { data, error } = await supabase.functions.invoke<{ success: boolean; message?: string; emailProviderConfigured?: boolean; error?: string }>('invite-member', {
     body: { tenant_id: tenantId, email, role },
   });
   if (error) throw error;
   if (!data || typeof data !== 'object' || !data.success) {
     throw new Error(data?.error || data?.message || 'Mời thành viên thất bại');
   }
-  return { success: data.success, message: data.message };
+  return { success: data.success, message: data.message, emailProviderConfigured: data.emailProviderConfigured };
 }
 
 export async function resetMemberPassword(

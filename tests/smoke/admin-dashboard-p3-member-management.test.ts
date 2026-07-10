@@ -19,6 +19,10 @@ import {
   updateMemberRole,
   removeMember,
   resetMemberPassword,
+  searchTenantMembers,
+  bulkInviteMembers,
+  toggleMemberActive,
+  resendMemberInvite,
 } from '../../services/tenantService';
 
 // ponytail: smoke test P3 member management. Dùng mock in-memory để xác minh
@@ -105,5 +109,57 @@ describe('smoke: admin dashboard P3 member management', () => {
     const tenant = await seedTenant();
     setSystemAdmin(false);
     await expect(getTenantMembersWithEmail(tenant.id)).rejects.toThrow();
+  });
+
+  it('search_tenant_members trả về phân trang và total_count', async () => {
+    const tenant = await seedTenant();
+    const sub = getMockRows('tenant_subscriptions').find(s => s.tenant_id === tenant.id);
+    if (sub) sub.max_users = 5;
+
+    await inviteMemberByEmail(tenant.id, 'a@example.com', 'cashier');
+    await inviteMemberByEmail(tenant.id, 'b@example.com', 'inventory_manager');
+
+    const res = await searchTenantMembers({ tenantId: tenant.id, page: 1, pageSize: 2 });
+    expect(res.totalCount).toBe(3);
+    expect(res.members.length).toBe(2);
+  });
+
+  it('bulk_invite_members mời nhiều email và loại trùng', async () => {
+    const tenant = await seedTenant();
+    const sub = getMockRows('tenant_subscriptions').find(s => s.tenant_id === tenant.id);
+    if (sub) sub.max_users = 10;
+
+    const res = await bulkInviteMembers(tenant.id, ['a@example.com', ' b@example.com ', 'A@EXAMPLE.COM'], 'cashier');
+    expect(res.succeeded).toBe(2);
+    expect(res.failed).toBe(0);
+    expect(res.alreadyMember).toBe(0);
+
+    const members = await getTenantMembersWithEmail(tenant.id);
+    expect(members.length).toBe(3);
+  });
+
+  it('toggle_member_active cập nhật trạng thái is_active', async () => {
+    const tenant = await seedTenant();
+    const owner = getMockRows('tenant_memberships').find(m => m.tenant_id === tenant.id)!;
+    owner.is_active = false;
+
+    const updated = await toggleMemberActive(tenant.id, owner.user_id, true);
+    expect(updated.isActive).toBe(true);
+    expect(getMockRows('tenant_memberships').find(m => m.id === owner.id)?.is_active).toBe(true);
+  });
+
+  it('resend_member_invite chỉ cho phép thành viên pending', async () => {
+    const tenant = await seedTenant();
+    const sub = getMockRows('tenant_subscriptions').find(s => s.tenant_id === tenant.id);
+    if (sub) sub.max_users = 5;
+
+    await inviteMemberByEmail(tenant.id, 'pending@example.com', 'cashier');
+    const pending = getMockRows('tenant_memberships').find(m => m.tenant_id === tenant.id && m.role === 'cashier')!;
+    pending.status = 'pending';
+
+    await expect(resendMemberInvite(tenant.id, pending.user_id)).resolves.toEqual(expect.objectContaining({ success: true }));
+
+    pending.status = 'active';
+    await expect(resendMemberInvite(tenant.id, pending.user_id)).rejects.toThrow('pending');
   });
 });

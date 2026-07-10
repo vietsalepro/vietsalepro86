@@ -679,6 +679,39 @@ const rpc = async (name: string, params: Record<string, any>) => {
     return { data: rows, error: null };
   }
 
+  if (name === 'search_tenant_members') {
+    if (!isSystemAdmin) {
+      return { data: null, error: { code: '42501', message: 'Chỉ system admin mới được xem danh sách thành viên tenant' } };
+    }
+    const tenant = store.tenants.find(t => t.id === params.p_tenant_id);
+    if (!tenant) return { data: null, error: { code: 'PGRST116', message: 'Not found' } };
+    let rows: any[] = store.tenant_memberships
+      .filter(m => m.tenant_id === params.p_tenant_id)
+      .map(m => ({
+        ...m,
+        email: `user-${m.user_id}@example.com`,
+        invited_by_email: m.invited_by ? `inviter-${m.invited_by}@example.com` : null,
+      }));
+    if (params.p_role) {
+      rows = rows.filter(m => m.role === params.p_role);
+    }
+    if (params.p_status) {
+      rows = rows.filter(m => m.status === params.p_status);
+    }
+    if (params.p_is_active !== null && params.p_is_active !== undefined) {
+      rows = rows.filter(m => m.is_active === params.p_is_active);
+    }
+    const search = params.p_search ? String(params.p_search).toLowerCase() : '';
+    if (search) {
+      rows = rows.filter(m => (m.email || '').toLowerCase().includes(search));
+    }
+    const page = Number(params.p_page ?? 1);
+    const pageSize = Number(params.p_page_size ?? 20);
+    const offset = (page - 1) * pageSize;
+    const paginated = rows.slice(offset, offset + pageSize);
+    return { data: { items: paginated, total_count: rows.length }, error: null };
+  }
+
   if (name === 'get_system_overview') {
     if (!isSystemAdmin) {
       return { data: null, error: { code: '42501', message: 'Chỉ system admin mới được xem tổng quan hệ thống' } };
