@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -2580,27 +2581,109 @@ function TenantRowActions({
   deleting,
 }: TenantRowActionsProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, right: 0 });
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const updateMenuPos = useCallback(() => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setMenuPos({
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right,
+      });
+    }
+  }, []);
 
   useEffect(() => {
     if (!open) return;
+    updateMenuPos();
     const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) {
+        return;
       }
+      setOpen(false);
     };
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
     };
+    const handleScrollResize = () => updateMenuPos();
     document.addEventListener('mousedown', handleClick);
     document.addEventListener('keydown', handleKey);
+    window.addEventListener('scroll', handleScrollResize, true);
+    window.addEventListener('resize', handleScrollResize);
     return () => {
       document.removeEventListener('mousedown', handleClick);
       document.removeEventListener('keydown', handleKey);
+      window.removeEventListener('scroll', handleScrollResize, true);
+      window.removeEventListener('resize', handleScrollResize);
     };
-  }, [open]);
+  }, [open, updateMenuPos]);
 
   const isArchived = tenant.status === 'archived';
+
+  const menu = (
+    <div
+      ref={menuRef}
+      className="fixed w-56 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-[100] origin-top-right"
+      style={{ top: menuPos.top, right: menuPos.right }}
+    >
+      <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+        <Database size={12} />
+        Quản lý dữ liệu
+      </div>
+      <button
+        type="button"
+        onClick={() => { setOpen(false); onBackup(); }}
+        disabled={backingUp}
+        className="w-full text-left px-3 py-2 min-h-[44px] text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+      >
+        <Download size={14} className="text-cyan-600" />
+        {backingUp ? 'Đang backup...' : 'Backup'}
+      </button>
+      <button
+        type="button"
+        onClick={() => { setOpen(false); onRestore(); }}
+        disabled={restoring}
+        className="w-full text-left px-3 py-2 min-h-[44px] text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+      >
+        <Upload size={14} className="text-indigo-600" />
+        Restore
+      </button>
+      <button
+        type="button"
+        onClick={() => { setOpen(false); onResetDemo(); }}
+        disabled={resetting}
+        className="w-full text-left px-3 py-2 min-h-[44px] text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
+      >
+        <RotateCcw size={14} className="text-amber-600" />
+        {resetting ? 'Đang reset...' : 'Reset demo'}
+      </button>
+      <div className="my-1 border-t border-gray-100" />
+      <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+        <Archive size={12} />
+        Vòng đời
+      </div>
+      <button
+        type="button"
+        onClick={() => { setOpen(false); onArchive(); }}
+        className="w-full text-left px-3 py-2 min-h-[44px] text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+      >
+        <Archive size={14} className={isArchived ? 'text-green-600' : 'text-gray-500'} />
+        {isArchived ? 'Khôi phục' : 'Lưu trữ'}
+      </button>
+      <button
+        type="button"
+        onClick={() => { setOpen(false); onDelete(); }}
+        disabled={deleting}
+        className="w-full text-left px-3 py-2 min-h-[44px] text-sm text-red-700 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50"
+      >
+        <Trash2 size={14} />
+        {deleting ? 'Đang xóa...' : 'Xóa vĩnh viễn'}
+      </button>
+    </div>
+  );
 
   return (
     <div className="flex items-center gap-2">
@@ -2622,8 +2705,9 @@ function TenantRowActions({
       >
         <Pencil size={18} />
       </button>
-      <div ref={ref} className="relative z-50">
+      <div className="relative">
         <button
+          ref={triggerRef}
           type="button"
           onClick={() => setOpen(prev => !prev)}
           aria-label="Thêm thao tác"
@@ -2632,63 +2716,7 @@ function TenantRowActions({
         >
           <MoreHorizontal size={18} />
         </button>
-        {open && (
-          <div className="absolute right-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50 origin-top-right">
-            <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
-              <Database size={12} />
-              Quản lý dữ liệu
-            </div>
-            <button
-              type="button"
-              onClick={() => { setOpen(false); onBackup(); }}
-              disabled={backingUp}
-              className="w-full text-left px-3 py-2 min-h-[44px] text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
-            >
-              <Download size={14} className="text-cyan-600" />
-              {backingUp ? 'Đang backup...' : 'Backup'}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setOpen(false); onRestore(); }}
-              disabled={restoring}
-              className="w-full text-left px-3 py-2 min-h-[44px] text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
-            >
-              <Upload size={14} className="text-indigo-600" />
-              Restore
-            </button>
-            <button
-              type="button"
-              onClick={() => { setOpen(false); onResetDemo(); }}
-              disabled={resetting}
-              className="w-full text-left px-3 py-2 min-h-[44px] text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 disabled:opacity-50"
-            >
-              <RotateCcw size={14} className="text-amber-600" />
-              {resetting ? 'Đang reset...' : 'Reset demo'}
-            </button>
-            <div className="my-1 border-t border-gray-100" />
-            <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
-              <Archive size={12} />
-              Vòng đời
-            </div>
-            <button
-              type="button"
-              onClick={() => { setOpen(false); onArchive(); }}
-              className="w-full text-left px-3 py-2 min-h-[44px] text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-            >
-              <Archive size={14} className={isArchived ? 'text-green-600' : 'text-gray-500'} />
-              {isArchived ? 'Khôi phục' : 'Lưu trữ'}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setOpen(false); onDelete(); }}
-              disabled={deleting}
-              className="w-full text-left px-3 py-2 min-h-[44px] text-sm text-red-700 hover:bg-red-50 flex items-center gap-2 disabled:opacity-50"
-            >
-              <Trash2 size={14} />
-              {deleting ? 'Đang xóa...' : 'Xóa vĩnh viễn'}
-            </button>
-          </div>
-        )}
+        {open && createPortal(menu, document.body)}
       </div>
     </div>
   );
