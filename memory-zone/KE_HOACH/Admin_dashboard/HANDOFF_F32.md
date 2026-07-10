@@ -387,7 +387,7 @@ Nếu có lỗi nghiêm trọng trên production:
 - [x] `npm run build`: PASS
 - [x] `npx vitest run`: PASS (244 tests, 41 files)
 - [x] Edge Function deployed version: `create-tenant` trên project `rsialbfjswnrkzcxarnj` (deployed 2026-07-10, script size 72 kB)
-- [ ] Vercel deployment URL / commit: cần deploy frontend
+- [x] Vercel deployment URL / commit: `https://admin.vietsalepro.com` (deployment `dpl_DAJ1Q4SuuLkNUjEfMDxZQWuXdEL4`, commit `b92e4eb2`)
 - [ ] Production smoke test result: cần thực hiện trên production sau deploy
 - [ ] Test data cleaned up: cần dọn dẹp sau smoke test
 - [x] Final commit hash (code + test): `eef3334`
