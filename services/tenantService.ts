@@ -521,17 +521,17 @@ export async function getMemberWithEmail(tenantId: string, userId: string): Prom
 export async function searchMembers(params: SearchMembersParams): Promise<SearchMembersResult> {
   const { data, error } = await supabase.rpc('search_members_by_email', {
     p_tenant_id: params.tenantId,
-    p_query: params.query ?? '',
+    p_query: params.search ?? '',
     p_page: params.page ?? 1,
-    p_limit: params.limit ?? 20,
-    p_role_filter: params.roleFilter ?? 'all',
-    p_status_filter: params.statusFilter ?? 'all',
+    p_limit: params.pageSize ?? 20,
+    p_role_filter: params.role ?? 'all',
+    p_status_filter: params.status ?? 'all',
   });
 
   if (error) throw error;
   return {
     members: (data?.members ?? []).map(mapMembershipFromDB),
-    total: data?.total ?? 0,
+    totalCount: data?.total ?? 0,
   };
 }
 
@@ -586,6 +586,23 @@ export async function updateTenantFeatureFlags(
 }
 
 // --- Admin helpers (requires system admin privileges) ---
+
+export async function createTenantWithAdmin(input: {
+  name: string;
+  subdomain: string;
+  plan?: TenantPlan;
+  ownerId?: string;
+}): Promise<Tenant> {
+  const { data, error } = await supabase.rpc('create_tenant_with_admin', {
+    p_name: input.name,
+    p_subdomain: input.subdomain,
+    p_plan: input.plan ?? 'free',
+    p_owner_user_id: input.ownerId ?? null,
+  });
+
+  if (error) throw error;
+  return mapTenantFromDB(data);
+}
 
 export async function createTenant(input: {
   name: string;
@@ -815,9 +832,29 @@ export async function getTenantBySubdomain(subdomain: string): Promise<Tenant | 
   return data ? mapTenantFromDB(data) : null;
 }
 
+// ponytail: aliases for callers using the older naming convention.
+export const getTenantById = getTenant;
+
+export async function getTenantByDomain(domain: string): Promise<Tenant | null> {
+  const { data, error } = await supabase
+    .from('tenants')
+    .select('*')
+    .eq('custom_domain', domain.toLowerCase())
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? mapTenantFromDB(data) : null;
+}
+
+export async function getCurrentUserTenants(): Promise<Tenant[]> {
+  const { data, error } = await supabase.rpc('get_current_user_tenants');
+  if (error) throw error;
+  return (data ?? []).map(mapTenantFromDB);
+}
+
 export async function updateTenant(
   id: string,
-  updates: Partial<Pick<Tenant, 'name' | 'plan' | 'status' | 'isolationMode' | 'isolationSchema' | 'isolationProjectRef' | 'customDomain' | 'whiteLabel' | 'settings'>>
+  updates: Partial<Pick<Tenant, 'name' | 'plan' | 'status' | 'isolationMode' | 'isolationSchema' | 'isolationProjectRef' | 'customDomain' | 'whiteLabel' | 'readReplicaUrl' | 'connectionPoolConfig' | 'settings'>>
 ): Promise<Tenant> {
   const { data, error } = await supabase.rpc('update_tenant', {
     p_tenant_id: id,
@@ -829,6 +866,8 @@ export async function updateTenant(
     p_isolation_project_ref: updates.isolationProjectRef ?? null,
     p_custom_domain: updates.customDomain ?? null,
     p_white_label: updates.whiteLabel ?? null,
+    p_read_replica_url: updates.readReplicaUrl ?? null,
+    p_connection_pool_config: updates.connectionPoolConfig ?? null,
   });
 
   if (error) throw error;
@@ -843,6 +882,39 @@ export async function getMembers(tenantId: string): Promise<TenantMembership[]> 
 
   if (error) throw error;
   return (data ?? []).map(mapMembershipFromDB);
+}
+
+// ponytail: aliases for callers using the older naming convention.
+export const getTenantMembers = getMembers;
+
+export async function getMembership(tenantId: string, userId: string): Promise<TenantMembership | null> {
+  const { data, error } = await supabase
+    .from('tenant_memberships')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? mapMembershipFromDB(data) : null;
+}
+
+export async function getTenantMembersWithEmail(tenantId: string): Promise<MemberWithEmail[]> {
+  const { data, error } = await supabase.rpc('get_tenant_members_with_email', {
+    p_tenant_id: tenantId,
+  });
+
+  if (error) throw error;
+  return (data ?? []).map((row: any) => ({
+    ...mapMembershipFromDB(row),
+    email: row.email,
+    invitedByEmail: row.invited_by_email,
+    invitedAt: row.invited_at,
+    acceptedAt: row.accepted_at,
+    lastSignInAt: row.last_sign_in_at,
+    confirmedAt: row.confirmed_at,
+    isOwner: row.is_owner ?? false,
+  }));
 }
 
 export async function getStorageUsage(tenantId: string): Promise<StorageUsage> {

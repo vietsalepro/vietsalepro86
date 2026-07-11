@@ -77,16 +77,16 @@ describe('smoke: admin dashboard P4 system analytics', () => {
     if (subA) subA.current_month_orders = 100;
     if (subB) subB.current_month_orders = 50;
 
-    const top = await getTopTenants(2);
-    expect(top.length).toBe(2);
-    expect(top[0].id).toBe(a.id);
-    expect(top[0].ordersThisMonth).toBe(100);
-    expect(top[1].ordersThisMonth).toBe(50);
+    const top = await getTopTenants({ limit: 2 });
+    expect(top.data.length).toBe(2);
+    expect(top.data[0].id).toBe(a.id);
+    expect(top.data[0].ordersThisMonth).toBe(100);
+    expect(top.data[1].ordersThisMonth).toBe(50);
   });
 
   it('get_tenant_growth trả về đủ số tháng', async () => {
     await seedTenant('P4 Growth', 'p4-growth');
-    const growth = await getTenantGrowth(6);
+    const growth = await getTenantGrowth({ months: 6 });
     expect(growth.length).toBe(6);
     const currentMonth = new Date().toISOString().slice(0, 7);
     const currentPoint = growth.find(g => g.month === currentMonth);

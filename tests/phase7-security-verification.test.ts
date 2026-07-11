@@ -8,6 +8,7 @@
 // 5. TypeScript compiles cleanly.
 // 6. Supabase migration diff is clean.
 
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { supabase } from '../lib/supabase';
 
 beforeEach(() => {

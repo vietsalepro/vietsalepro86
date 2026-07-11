@@ -853,11 +853,11 @@ export default function SystemAdminDashboard() {
     try {
       const [overviewData, topData, growthData] = await Promise.all([
         getSystemOverview(),
-        getTopTenants(10),
-        getTenantGrowth(6),
+        getTopTenants({ limit: 10 }),
+        getTenantGrowth({ months: 6 }),
       ]);
       setOverview(overviewData);
-      setTopTenants(topData);
+      setTopTenants(topData.data);
       setGrowth(growthData);
     } catch (err: any) {
       setAnalyticsError(err?.message || 'Không thể tải dữ liệu tổng quan.');

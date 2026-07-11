@@ -3,7 +3,7 @@
 // ============================================================
 
 export type TenantStatus = 'active' | 'suspended' | 'trial' | 'pending' | 'archived' | 'read_only';
-export type TenantPlan = 'free' | 'vip';
+export type TenantPlan = string;
 
 // FIX [6.4]: Add 'viewer' role (SELECT-only permission, no mutations)
 export type TenantRole = 'admin' | 'cashier' | 'inventory_manager' | 'accountant' | 'viewer';
@@ -57,6 +57,7 @@ export interface TenantMembership {
   status?: 'pending' | 'active' | 'inactive';
   isActive?: boolean;
   invitedBy?: string;
+  email?: string;
   impersonatedBy?: string;
   impersonatedAt?: string;
   impersonatedExpiresAt?: string;
@@ -92,15 +93,18 @@ export interface SearchMembersResult {
 }
 
 export interface TenantSubscription {
+  id?: string;
   tenantId: string;
   plan: string;
   maxUsers: number;
   maxProducts: number;
   maxOrdersPerMonth: number;
+  maxStorageGb?: number;
   currentMonthOrders: number;
   currentMonthStart: string;
   billingStatus?: string;
   expiresAt?: string;
+  createdAt?: string;
   updatedAt?: string;
 }
 
@@ -127,6 +131,7 @@ export interface UpdateSubscriptionInput {
   maxUsers?: number;
   maxProducts?: number;
   maxOrdersPerMonth?: number;
+  maxStorageGb?: number;
   billingStatus?: BillingStatus;
   expiresAt?: string | null;
 }

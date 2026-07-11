@@ -153,12 +153,13 @@ interface QueryState {
   table: string;
   operation: 'select' | 'insert' | 'update' | 'delete' | 'upsert';
   filters: Record<string, any>;
+  notFilters: Record<string, any>;
   ilikeFilters: Record<string, string>;
   inFilters: Record<string, any[]>;
   gteFilters: Record<string, any>;
   lteFilters: Record<string, any>;
   selectColumns: string;
-  single: boolean;
+  single: boolean | 'maybe';
   count?: 'exact' | 'estimated' | 'planned' | null;
   head?: boolean;
   insertValues?: any[];
@@ -198,6 +199,9 @@ const executeQuery = (state: QueryState) => {
 
   for (const [field, value] of Object.entries(state.filters)) {
     rows = rows.filter(r => r[field] === value);
+  }
+  for (const [field, value] of Object.entries(state.notFilters)) {
+    rows = rows.filter(r => r[field] !== value);
   }
   for (const [field, values] of Object.entries(state.inFilters)) {
     rows = rows.filter(r => values.includes(r[field]));
@@ -249,6 +253,9 @@ const executeQuery = (state: QueryState) => {
       });
     }
     if (state.single) {
+      if (state.single === 'maybe') {
+        return { data: rows[0] ?? null, error: null };
+      }
       return rows.length
         ? { data: rows[0], error: null }
         : { data: null, error: { code: 'PGRST116', message: 'Not found' } };
@@ -366,7 +373,7 @@ const executeQuery = (state: QueryState) => {
 };
 
 const queryBuilder = (table: string): any => {
-  const state: QueryState = { table, operation: 'select', filters: {}, ilikeFilters: {}, inFilters: {}, gteFilters: {}, lteFilters: {}, selectColumns: '*', single: false };
+  const state: QueryState = { table, operation: 'select', filters: {}, notFilters: {}, ilikeFilters: {}, inFilters: {}, gteFilters: {}, lteFilters: {}, selectColumns: '*', single: false };
   const builder = {
     select: (cols: string | object = '*', options?: { count?: 'exact' | 'estimated' | 'planned'; head?: boolean }) => {
       if (typeof cols === 'string') state.selectColumns = cols;
@@ -385,6 +392,7 @@ const queryBuilder = (table: string): any => {
     delete: () => { state.operation = 'delete'; return builder; },
     upsert: (values: any) => { state.operation = 'upsert'; state.upsertValues = Array.isArray(values) ? values : [values]; return builder; },
     eq: (field: string, value: any) => { state.filters[field] = value; return builder; },
+    not: (field: string, _op: string, value: any) => { state.notFilters[field] = value; return builder; },
     ilike: (field: string, pattern: string) => { state.ilikeFilters[field] = pattern; return builder; },
     in: (field: string, values: any[]) => { state.inFilters[field] = values; return builder; },
     gte: (field: string, value: any) => { state.gteFilters[field] = value; return builder; },
@@ -392,6 +400,7 @@ const queryBuilder = (table: string): any => {
     range: (from: number, to: number) => { state.rangeStart = from; state.rangeEnd = to; return builder; },
     order: (field: string, opts?: { ascending?: boolean }) => { state.orderBy = field; state.orderAsc = opts?.ascending ?? false; return builder; },
     single: () => { state.single = true; return builder; },
+    maybeSingle: () => { state.single = 'maybe'; return builder; },
     then: (resolve: any) => {
       resolve(executeQuery(state));
     },
@@ -439,6 +448,7 @@ const rpc = async (name: string, params: Record<string, any>) => {
     });
     const ownerId = params.p_owner_user_id ?? currentUserId;
     if (ownerId) {
+      const owner = store.users.find(u => u.id === ownerId);
       store.tenant_memberships.push({
         id: uuid(),
         tenant_id: tenant.id,
@@ -446,6 +456,7 @@ const rpc = async (name: string, params: Record<string, any>) => {
         role: 'admin',
         status: 'active',
         is_active: true,
+        email: owner?.email || `${ownerId}@example.com`,
         invited_by: null,
         invited_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
@@ -837,15 +848,15 @@ const rpc = async (name: string, params: Record<string, any>) => {
           subdomain: t.subdomain,
           status: t.status,
           plan: t.plan,
-          created_at: t.created_at,
-          orders_this_month: sub?.current_month_orders ?? 0,
-          user_count: store.tenant_memberships.filter(m => m.tenant_id === t.id).length,
-          product_count: store.products.filter(p => p.tenant_id === t.id).length,
+          createdAt: t.created_at,
+          ordersThisMonth: sub?.current_month_orders ?? 0,
+          userCount: store.tenant_memberships.filter(m => m.tenant_id === t.id).length,
+          productCount: store.products.filter(p => p.tenant_id === t.id).length,
         };
       })
-      .sort((a, b) => b.orders_this_month - a.orders_this_month || new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .sort((a, b) => b.ordersThisMonth - a.ordersThisMonth || new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
       .slice(0, limit);
-    return { data: rows, error: null };
+    return { data: { data: rows, count: rows.length }, error: null };
   }
 
   if (name === 'get_tenant_growth') {
@@ -1914,6 +1925,99 @@ const rpc = async (name: string, params: Record<string, any>) => {
     return { data: job, error: null };
   }
 
+  if (name === 'get_current_user_tenants') {
+    const memberships = store.tenant_memberships.filter(m => m.user_id === currentUserId);
+    const tenantIds = memberships.map(m => m.tenant_id);
+    const rows = store.tenants.filter(t => tenantIds.includes(t.id) && t.status !== 'archived');
+    return { data: rows, error: null };
+  }
+
+  if (name === 'get_storage_usage') {
+    if (!isSystemAdmin) {
+      return { data: null, error: { code: '42501', message: 'Chỉ system admin mới được xem storage usage' } };
+    }
+    const tenants = store.tenants
+      .filter(t => t.status !== 'archived')
+      .map(t => ({
+        id: t.id,
+        name: t.name,
+        subdomain: t.subdomain,
+        bytes: 1024 * 1024 * Math.floor(Math.random() * 50),
+        tables: [],
+      }));
+    return {
+      data: {
+        checkedAt: new Date().toISOString(),
+        totalDatabaseBytes: tenants.reduce((sum, t) => sum + t.bytes, 0),
+        tenants,
+      },
+      error: null,
+    };
+  }
+
+  if (name === 'get_tenant_members_with_email') {
+    const tenantId = params.p_tenant_id;
+    if (!isSystemAdmin && !isTenantOwner(tenantId)) {
+      return { data: null, error: { code: '42501', message: 'Chỉ system admin hoặc chủ sở hữu mới được xem danh sách thành viên' } };
+    }
+    const rows = store.tenant_memberships
+      .filter(m => m.tenant_id === tenantId)
+      .map(m => ({
+        ...m,
+        email: m.email || `${m.user_id}@example.com`,
+        invited_by_email: store.users.find(u => u.id === m.invited_by)?.email || null,
+      }));
+    return { data: rows, error: null };
+  }
+
+  if (name === 'update_tenant_member_role') {
+    const tenantId = params.p_tenant_id;
+    const userId = params.p_user_id;
+    const role = params.p_role;
+    if (!isSystemAdmin && !isTenantOwner(tenantId)) {
+      return { data: null, error: { code: '42501', message: 'Chỉ system admin hoặc chủ sở hữu mới được cập nhật vai trò' } };
+    }
+    const validRoles = ['admin', 'cashier', 'inventory_manager', 'accountant', 'viewer'];
+    if (!validRoles.includes(role)) {
+      return { data: null, error: { code: '23514', message: `Vai trò không hợp lệ: ${role}` } };
+    }
+    const member = store.tenant_memberships.find(m => m.tenant_id === tenantId && m.user_id === userId);
+    if (!member) return { data: null, error: { code: 'PGRST116', message: 'Not found' } };
+    member.role = role;
+    member.updated_at = new Date().toISOString();
+    return { data: member, error: null };
+  }
+
+  if (name === 'remove_tenant_member') {
+    const tenantId = params.p_tenant_id;
+    const userId = params.p_user_id;
+    if (!isSystemAdmin && !isTenantOwner(tenantId)) {
+      return { data: null, error: { code: '42501', message: 'Chỉ system admin hoặc chủ sở hữu mới được xóa thành viên' } };
+    }
+    const idx = store.tenant_memberships.findIndex(m => m.tenant_id === tenantId && m.user_id === userId);
+    if (idx === -1) return { data: null, error: { code: 'PGRST116', message: 'Not found' } };
+    const tenant = store.tenants.find(t => t.id === tenantId);
+    if (tenant?.owner_id === userId) {
+      return { data: null, error: { code: '42501', message: 'Không thể xóa chủ sở hữu tenant' } };
+    }
+    store.tenant_memberships.splice(idx, 1);
+    return { data: null, error: null };
+  }
+
+  if (name === 'toggle_tenant_member_active') {
+    const tenantId = params.p_tenant_id;
+    const userId = params.p_user_id;
+    const isActive = params.p_is_active;
+    if (!isSystemAdmin && !isTenantOwner(tenantId)) {
+      return { data: null, error: { code: '42501', message: 'Chỉ system admin hoặc chủ sở hữu mới được cập nhật trạng thái thành viên' } };
+    }
+    const member = store.tenant_memberships.find(m => m.tenant_id === tenantId && m.user_id === userId);
+    if (!member) return { data: null, error: { code: 'PGRST116', message: 'Not found' } };
+    member.is_active = isActive;
+    member.updated_at = new Date().toISOString();
+    return { data: member, error: null };
+  }
+
   return { data: null, error: { code: 'PGRST116', message: 'RPC not found' } };
 };
 
@@ -2282,7 +2386,7 @@ const functionsInvoke = async (name: string, { body }: { body: any }) => {
     return { data: { success: true, userId, email: normalizedEmail }, error: null };
   }
 
-  return { data: { error: 'Function not found' }, error: null };
+  return { data: null, error: { code: 'PGRST116', message: 'RPC not found' } };
 };
 
 export const mockSupabase = {
