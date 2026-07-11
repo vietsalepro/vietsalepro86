@@ -1756,14 +1756,14 @@ serve(async (req) => {
 - Run targeted tests or manual checks listed in the original fix plan.
 - Commit after this task.
 
-## Phase 4: P3 - Low Priority Improvements (future)
+## Phase 4: P3 - Low Priority Improvements (completed)
 
 ### Task: [6.1] Thiếu validation pattern email chuẩn
 
 **Objective:** Resolve Thiếu validation pattern email chuẩn
 
 **Source:** ✅ **XÁC NHẬN** - Email validation chỉ là regex cơ bản
-**Status:** ⚠️ CÓ THỂ FIX
+**Status:** ✅ Đã fix
 
 **Description:**
 
@@ -1780,7 +1780,7 @@ serve(async (req) => {
 **Objective:** Resolve Rate limiting chỉ theo IP, không theo user
 
 **Source:** ✅ **XÁC NHẬN** - Hầu hết Edge Function chỉ rate limit theo IP
-**Status:** ⚠️ CÓ THỂ FIX
+**Status:** ✅ Đã fix
 
 **Description:**
 
@@ -1797,7 +1797,7 @@ serve(async (req) => {
 **Objective:** Resolve Không giới hạn số tenant per user
 
 **Source:** ✅ **XÁC NHẬN** - Không có giới hạn
-**Status:** ⚠️ CÓ THỂ FIX
+**Status:** ✅ Đã fix
 
 **Description:**
 
@@ -1814,7 +1814,7 @@ serve(async (req) => {
 **Objective:** Resolve Chưa có role "viewer"
 
 **Source:** ✅ **XÁC NHẬN** - Chỉ có 4 role: admin, cashier, inventory_manager, accountant
-**Status:** ⚠️ CÓ THỂ FIX
+**Status:** ✅ Đã fix
 
 **Description:**
 
@@ -1831,7 +1831,7 @@ serve(async (req) => {
 **Objective:** Resolve Không check membership tồn tại trước khi delete
 
 **Source:** ✅ **XÁC NHẬN** - `removeMember` không kiểm tra membership tồn tại
-**Status:** ⚠️ CÓ THỂ FIX (đã bao gồm trong RPC remove_tenant_member ở mục 3.1)
+**Status:** ✅ Đã fix (đã bao gồm trong RPC remove_tenant_member ở mục 3.1)
 
 **Description:**
 
@@ -1848,7 +1848,7 @@ serve(async (req) => {
 **Objective:** Resolve Subdomain check không phân biệt active vs archived
 
 **Source:** ✅ **XÁC NHẬN**
-**Status:** ⚠️ CÓ THỂ FIX
+**Status:** ✅ Đã fix
 
 **Description:**
 
@@ -1865,7 +1865,7 @@ serve(async (req) => {
 **Objective:** Resolve 🔴 `addSystemAdmin(userId)` trong service không được UI dùng
 
 **Source:** ✅ **XÁC NHẬN** - `services/systemAdminService.ts` có hàm `addSystemAdmin(userId)` nhưng UI không dùng
-**Status:** ⚠️ CÓ THỂ FIX
+**Status:** ✅ Đã fix
 
 **Description:**
 
