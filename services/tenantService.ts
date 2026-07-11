@@ -166,6 +166,8 @@ export async function inviteMember(
   role: TenantRole,
   invitedBy?: string
 ): Promise<TenantMembership> {
+  // FIX [5.5]: Add runtime validation for role
+  validateRole(role);
   const { data: userData } = await supabase.auth.getUser();
   const inviterId = invitedBy ?? userData.user?.id ?? null;
 

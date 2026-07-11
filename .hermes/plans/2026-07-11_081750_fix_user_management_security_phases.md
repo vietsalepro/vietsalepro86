@@ -613,7 +613,7 @@ if (insertError) {
 **Objective:** Resolve Không bảo vệ owner/admin cuối cùng (thiếu status/is_active filter)
 
 **Source:** ✅ **XÁC NHẬN** - `20260711000005_f33_members_guardrails.sql` dòng 25-29
-**Status:** ⚠️ **Fix một phần**
+**Status:** ✅ **Đã hoàn thành**
 
 **Description:**
 
@@ -729,7 +729,7 @@ $$;
 **Objective:** Resolve Hard-delete tenant không có soft-delete
 
 **Source:** ✅ **XÁC NHẬN** - `supabase/functions/delete-tenant/index.ts`
-**Status:** ❌ Chưa fix
+**Status:** ✅ **Đã hoàn thành**
 
 **Description:**
 `delete-tenant` Edge Function xoá vĩnh viễn tenant và tất cả dữ liệu ngay lập tức. Không có soft-delete stage.
@@ -820,7 +820,7 @@ if (force && approvedBy) {
 **Objective:** Resolve Thiếu RLS policy trên bảng tenant_memberships
 
 **Source:** ✅ **XÁC NHẬN** - Không tìm thấy RLS policy nào cho `tenant_memberships`
-**Status:** ❌ Chưa fix
+**Status:** ✅ **Đã hoàn thành**
 
 **Description:**
 Bảng `tenant_memberships` không có RLS policy. Chỉ có trigger guardrails bảo vệ owner/last admin, nhưng không kiểm tra ai đang gọi.
@@ -881,7 +881,7 @@ CREATE POLICY "block_direct_delete" ON public.tenant_memberships
 **Objective:** Resolve 🔴 Xoá system admin cuối cùng không bị chặn
 
 **Source:** ✅ **XÁC NHẬN** - `20250706000004_phase_p5_audit_security.sql` dòng 159-183
-**Status:** ❌ Chưa fix
+**Status:** ✅ **Đã hoàn thành**
 
 **Description:**
 `remove_system_admin` RPC chỉ chặn tự xoá chính mình, nhưng **không chặn xoá system admin cuối cùng**.
@@ -898,7 +898,7 @@ CREATE POLICY "block_direct_delete" ON public.tenant_memberships
 **Objective:** Resolve 🔴 Mời user đã tồn tại không gửi email/link
 
 **Source:** ✅ **XÁC NHẬN** - `supabase/functions/invite-member/index.ts` dòng 181-193
-**Status:** ❌ Chưa fix
+**Status:** ✅ **Đã hoàn thành**
 
 **Description:**
 Khi tìm thấy user đã tồn tại trong `auth.users`, chỉ insert membership, **không gửi email hoặc link thông báo**.
@@ -960,7 +960,7 @@ if (userRow) {
 **Objective:** Resolve 🔴 Setup link yếu khi tạo cửa hàng / admin user
 
 **Source:** ✅ **XÁC NHẬN** - `supabase/functions/create-tenant/index.ts` dòng 147-158, 219-239
-**Status:** ❌ Chưa fix
+**Status:** ✅ **Đã hoàn thành**
 
 **Description:**
 Tạo user với `email_confirm: true` và mật khẩu random. Nếu `generateLink` thất bại, UI chỉ báo "email đã gửi" dù thực tế không có email nào được gửi.
@@ -1045,7 +1045,7 @@ return jsonResponse({
 **Objective:** Resolve 🔴 Reset password chọn type dựa trên `last_sign_in_at` không robust
 
 **Source:** ✅ **XÁC NHẬN** - `supabase/functions/reset-password/index.ts` dòng 142-144
-**Status:** ❌ Chưa fix
+**Status:** ✅ **Đã hoàn thành**
 
 **Description:**
 Chọn `type='invite'` nếu `last_sign_in_at` null, `type='recovery'` nếu đã sign-in. Với admin mới tạo từ `create-tenant` (`email_confirm=true` nhưng `last_sign_in_at` null), `type='invite'` có thể không hợp lệ.
@@ -1090,7 +1090,7 @@ const redirectTo = `https://${tenant.subdomain}.vietsalepro.com/${path}`;
 **Objective:** Resolve 🔴 Trial tenant không thể mời thành viên
 
 **Source:** ✅ **XÁC NHẬN** - `supabase/functions/invite-member/index.ts` dòng 89-91
-**Status:** ❌ Chưa fix
+**Status:** ✅ **Đã hoàn thành**
 
 **Description:**
 Edge Function yêu cầu `tenant.status = 'active'`, trong khi trigger `check_tenant_limits` cho phép cả `active`/`trial`.
@@ -1128,7 +1128,7 @@ if (!['active', 'trial'].includes(tenant.status)) {
 **Objective:** Resolve 🔴 Toggle active / Xoá owner ở grid không bị disabled
 
 **Source:** ✅ **XÁC NHẬN** - `components/MemberManagement.tsx` dòng 273-285, 365-373
-**Status:** ❌ Chưa fix
+**Status:** ✅ **Đã hoàn thành**
 
 **Description:**
 Grid vẫn cho phép đổi role/xoá owner qua dropdown/trash. `toggleMemberActive` không bị guardrail chặn, có thể vô hiệu hoá owner.

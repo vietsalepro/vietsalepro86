@@ -12,6 +12,76 @@ const jsonResponse = (data: unknown, status: number) =>
     headers: { 'Content-Type': 'application/json', ...corsHeaders },
   });
 
+// FIX [5.2]: Rate limiting constants
+const IP_RATE_LIMIT_WINDOW_MS = 60_000;      // 1 phút
+const IP_RATE_LIMIT_MAX = 5;                   // 5 request/phút/IP
+const TENANT_RATE_LIMIT_WINDOW_MS = 3_600_000; // 1 giờ
+const TENANT_RATE_LIMIT_MAX = 10;              // 10 request/giờ/tenant
+const USER_RATE_LIMIT_WINDOW_MS = 3_600_000;   // 1 giờ
+const USER_RATE_LIMIT_MAX = 3;                 // 3 request/giờ/user
+
+const getClientIp = (req: Request): string => {
+  const forwarded = req.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return req.headers.get('x-real-ip') || '0.0.0.0';
+};
+
+const isValidIp = (ip: string): boolean => {
+  return /^((\d{1,3}\.){3}\d{1,3}|([0-9a-fA-F:]+))$/.test(ip);
+};
+
+// FIX [5.2]: Rate limit check function
+async function checkRateLimit(supabaseAdmin: any, ip: string, tenantId: string, targetUserId: string): Promise<Response | null> {
+  const now = Date.now();
+  
+  // 1. IP rate limit: 5 request/phút
+  const ipWindowStart = new Date(now - IP_RATE_LIMIT_WINDOW_MS).toISOString();
+  const { count: ipCount } = await supabaseAdmin
+    .from('rate_limit_logs')
+    .select('*', { count: 'exact', head: true })
+    .eq('ip_address', ip)
+    .eq('action', 'reset_password')
+    .gte('window_start', ipWindowStart);
+  if ((ipCount ?? 0) >= IP_RATE_LIMIT_MAX) {
+    return jsonResponse({ error: 'Rate limit exceeded: 5 requests per minute' }, 429);
+  }
+  
+  // 2. Tenant rate limit: 10 request/giờ
+  const tenantWindowStart = new Date(now - TENANT_RATE_LIMIT_WINDOW_MS).toISOString();
+  const { count: tenantCount } = await supabaseAdmin
+    .from('rate_limit_logs')
+    .select('*', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+    .eq('action', 'reset_password')
+    .gte('window_start', tenantWindowStart);
+  if ((tenantCount ?? 0) >= TENANT_RATE_LIMIT_MAX) {
+    return jsonResponse({ error: 'Rate limit exceeded: 10 password resets per hour for this tenant' }, 429);
+  }
+  
+  // 3. User rate limit: 3 request/giờ (theo target user)
+  const userWindowStart = new Date(now - USER_RATE_LIMIT_WINDOW_MS).toISOString();
+  const { count: userCount } = await supabaseAdmin
+    .from('rate_limit_logs')
+    .select('*', { count: 'exact', head: true })
+    .eq('target_user_id', targetUserId)
+    .eq('action', 'reset_password')
+    .gte('window_start', userWindowStart);
+  if ((userCount ?? 0) >= USER_RATE_LIMIT_MAX) {
+    return jsonResponse({ error: 'Rate limit exceeded: 3 password resets per hour for this user' }, 429);
+  }
+  
+  // Log rate limit entry
+  await supabaseAdmin.from('rate_limit_logs').insert({
+    ip_address: ip,
+    tenant_id: tenantId,
+    target_user_id: targetUserId,
+    action: 'reset_password',
+    window_start: new Date().toISOString(),
+  });
+  
+  return null; // OK, not rate limited
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -139,6 +209,12 @@ serve(async (req) => {
       return jsonResponse({ error: 'User không thuộc tenant này' }, 403);
     }
 
+    // FIX [5.2]: Rate limit check before processing
+    const rawIp = getClientIp(req);
+    const ip = isValidIp(rawIp) ? rawIp : '0.0.0.0';
+    const rateLimitResponse = await checkRateLimit(supabaseAdmin, ip, tenant_id, targetUser.id);
+    if (rateLimitResponse) return rateLimitResponse;
+
     // FIX [4.7]: Use email_confirmed_at instead of last_sign_in_at to determine link type
     // - If user has confirmed email → use 'recovery' (reset password)
     // - If user hasn't confirmed email → use 'invite' (set password lần đầu)
@@ -174,6 +250,17 @@ serve(async (req) => {
     if (linkError) {
       console.warn('generateLink failed:', linkError.message);
     }
+
+    // FIX [5.2]: Audit log for password reset
+    await supabaseAdmin.from('app_audit_log').insert({
+      tenant_id,
+      user_id: user.id,
+      table_name: 'tenant_memberships',
+      record_id: targetUser.id,
+      action: 'MEMBER_PASSWORD_RESET',
+      new_data: { target_user_id: targetUser.id, type },
+      ip_address: ip,
+    }).catch(() => {});
 
     return jsonResponse({ success: true, action: type, redirectTo, link: linkData?.properties?.action_link ?? null }, 200);
   } catch (err) {
