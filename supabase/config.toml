@@ -574,3 +574,6 @@ verify_jwt = false
 
 [functions.billing-webhooks]
 verify_jwt = false
+
+[functions.cron-admin-tasks]
+verify_jwt = false
