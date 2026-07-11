@@ -4,7 +4,7 @@ import { MasterModal } from '../MasterModal';
 import { SelectInput } from '../SelectInput';
 import { ActionButton } from '../ActionButton';
 import { TenantRole, MemberWithEmail, UsageSummary } from '../../types/tenant';
-import { bulkInviteMembers, getTenantUsageSummary } from '../../services/tenantService';
+import { bulkInviteMembers, getUsageSummary } from '../../services/tenantService';
 
 interface MemberInviteModalProps {
   tenantId: string;
@@ -46,7 +46,7 @@ export const MemberInviteModal: React.FC<MemberInviteModalProps> = ({
 
   useEffect(() => {
     let cancelled = false;
-    getTenantUsageSummary(tenantId)
+    getUsageSummary(tenantId)
       .then((u) => { if (!cancelled) setUsage(u); })
       .catch((err) => { if (!cancelled) setUsageError(err?.message || 'Không tải được quota'); });
     return () => { cancelled = true; };

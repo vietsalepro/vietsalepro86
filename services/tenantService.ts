@@ -156,6 +156,136 @@ export async function inviteMemberByEmail(
   return { success: data.success, message: data.message, emailProviderConfigured: data.emailProviderConfigured };
 }
 
+export async function bulkInviteMembers(
+  tenantId: string,
+  emails: string[],
+  role: TenantRole,
+  maxConcurrency: number = 3
+): Promise<{
+  succeeded: number;
+  failed: number;
+  alreadyMember: number;
+  emailProviderNotConfigured: number;
+  errors: { email: string; message: string }[];
+}> {
+  // Validate
+  if (!Array.isArray(emails) || emails.length === 0) {
+    return { succeeded: 0, failed: 0, alreadyMember: 0, emailProviderNotConfigured: 0, errors: [] };
+  }
+  if (emails.length > 50) {
+    throw new Error('Tối đa 50 email mỗi lần');
+  }
+  validateRole(role);
+
+  // Deduplicate & normalize
+  const seen = new Set<string>();
+  const uniqueEmails = emails
+    .map((e) => e.trim().toLowerCase())
+    .filter((e) => {
+      if (!e || seen.has(e)) return false;
+      seen.add(e);
+      return true;
+    });
+
+  // Validate email format
+  const validEmails = uniqueEmails.filter((e) => EMAIL_REGEX.test(e));
+  const invalidCount = uniqueEmails.length - validEmails.length;
+
+  // Check existing members
+  const { data: existingMembers, error: existingError } = await supabase
+    .from('tenant_memberships')
+    .select('email')
+    .eq('tenant_id', tenantId)
+    .in('email', validEmails);
+
+  if (existingError) throw existingError;
+
+  const existingEmailSet = new Set((existingMembers ?? []).map((m: any) => m.email?.toLowerCase()));
+  const newEmails = validEmails.filter((e) => !existingEmailSet.has(e));
+
+  // Check quota
+  const { data: usageData, error: usageError } = await supabase.rpc('get_tenant_usage_summary', {
+    p_tenant_id: tenantId,
+  });
+  if (usageError) throw usageError;
+
+  const currentUsers = usageData?.users?.current ?? 0;
+  const maxUsers = usageData?.users?.max ?? 0;
+  const availableSlots = maxUsers > 0 ? Math.max(0, maxUsers - currentUsers) : newEmails.length;
+  const inviteEmails = newEmails.slice(0, availableSlots);
+  const quotaExceeded = newEmails.length - inviteEmails.length;
+
+  // Invite concurrently
+  const results = await Promise.allSettled(
+    inviteEmails.map((email) =>
+      supabase.functions.invoke<{ success: boolean; message?: string; emailProviderConfigured?: boolean; error?: string }>('invite-member', {
+        body: { tenant_id: tenantId, email, role },
+      })
+    )
+  );
+
+  let succeeded = 0;
+  let failed = 0;
+  let emailProviderNotConfigured = 0;
+  const errors: { email: string; message: string }[] = [];
+
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+    const email = inviteEmails[i];
+    if (result.status === 'fulfilled' && result.value.data?.success) {
+      succeeded++;
+      if (!result.value.data.emailProviderConfigured) {
+        emailProviderNotConfigured++;
+      }
+    } else {
+      failed++;
+      const message = result.status === 'rejected'
+        ? (await parseFunctionError(result.reason).catch(() => result.reason?.message || 'Lỗi không xác định'))
+        : (result.value.data?.error || result.value.data?.message || 'Mời thất bại');
+      errors.push({ email, message });
+    }
+  }
+
+  // Add quota exceeded as failures
+  for (let i = 0; i < quotaExceeded; i++) {
+    failed++;
+    errors.push({ email: newEmails[inviteEmails.length + i], message: 'Vượt quá giới hạn thành viên' });
+  }
+
+  // Add invalid emails as failures
+  for (let i = 0; i < invalidCount; i++) {
+    failed++;
+    errors.push({ email: '', message: 'Email không hợp lệ' });
+  }
+
+  return {
+    succeeded,
+    failed,
+    alreadyMember: existingEmailSet.size,
+    emailProviderNotConfigured,
+    errors,
+  };
+}
+
+export async function resendMemberInvite(
+  tenantId: string,
+  userId: string
+): Promise<{ success: boolean; action?: string; redirectTo?: string; link?: string | null }> {
+  const { data: member, error: memberError } = await supabase
+    .from('tenant_memberships')
+    .select('status')
+    .eq('tenant_id', tenantId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (memberError) throw memberError;
+  if (!member) throw new Error('Thành viên không tồn tại');
+  if (member.status !== 'pending') {
+    throw new Error('Chỉ có thể gửi lại lời mời cho thành viên đang ở trạng thái pending');
+  }
+  return resetMemberPassword(tenantId, userId);
+}
+
 export async function resetMemberPassword(
   tenantId: string,
   userId: string
@@ -484,6 +614,16 @@ export async function getTenantGrowth(options: {
 
 // --- Tenant CRUD for regular flow ---
 
+export async function getAllTenants(): Promise<Tenant[]> {
+  const { data, error } = await supabase
+    .from('tenants')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data ?? []).map(mapTenantFromDB);
+}
+
 export async function getTenant(id: string): Promise<Tenant | null> {
   const { data, error } = await supabase
     .from('tenants')
@@ -536,6 +676,14 @@ export async function getMembers(tenantId: string): Promise<TenantMembership[]> 
 export async function getStorageUsage(tenantId: string): Promise<StorageUsage> {
   const { data, error } = await supabase.rpc('get_storage_usage', {
     p_tenant_id: tenantId,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function getTenantStorageUsage(): Promise<StorageUsage> {
+  const { data, error } = await supabase.rpc('get_storage_usage', {
+    p_tenant_id: null,
   });
   if (error) throw error;
   return data;

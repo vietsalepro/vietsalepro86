@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { FileText } from 'lucide-react';
 import { Tenant, UsageSummary } from '../types/tenant';
-import { getAllTenants, getTenantUsageSummary } from '../services/tenantService';
+import { getTenantsAdmin, getUsageSummary } from '../services/tenantService';
 import { createInvoice, calculateInvoicePrice } from '../services/invoiceService';
 import { CreateInvoiceInput, Invoice } from '../types/billing';
 
@@ -26,8 +26,8 @@ export default function InvoiceCreator() {
   useEffect(() => {
     let cancelled = false;
     setTenantsLoading(true);
-    getAllTenants()
-      .then(list => { if (!cancelled) setTenants(list.filter(t => t.status !== 'archived')); })
+    getTenantsAdmin({ page: 1, limit: 1000, status: 'all', plan: 'all' })
+      .then(result => { if (!cancelled) setTenants(result.items.filter(t => t.status !== 'archived')); })
       .catch(err => { if (!cancelled) setError(err?.message || 'Không thể tải danh sách cửa hàng.'); })
       .finally(() => { if (!cancelled) setTenantsLoading(false); });
     return () => { cancelled = true; };
@@ -40,7 +40,7 @@ export default function InvoiceCreator() {
     }
     let cancelled = false;
     setUsageLoading(true);
-    getTenantUsageSummary(selectedTenantId)
+    getUsageSummary(selectedTenantId)
       .then(u => { if (!cancelled) setUsage(u); })
       .catch(() => { if (!cancelled) setUsage(null); })
       .finally(() => { if (!cancelled) setUsageLoading(false); });
