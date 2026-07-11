@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, Suspense } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -11,16 +11,8 @@ import VoucherManager from '../../components/VoucherManager';
 import TicketInbox from '../../components/TicketInbox';
 import EmailTemplateManager from '../../components/EmailTemplateManager';
 import NotificationManager from '../../components/NotificationManager';
-import SystemHealthPanel from '../../components/SystemHealthPanel';
-import ErrorPerformancePanel from '../../components/ErrorPerformancePanel';
-import StorageBackupPanel from '../../components/StorageBackupPanel';
-import BulkMaintenancePanel from '../../components/BulkMaintenancePanel';
-import ApiKeyManager from '../../components/ApiKeyManager';
-import WebhookManager from '../../components/WebhookManager';
-import IntegrationMarketplace from '../../components/IntegrationMarketplace';
 import TwoFactorManager from '../../components/TwoFactorManager';
 import ComplianceManager from '../../components/ComplianceManager';
-import WhiteLabelManager from '../../components/WhiteLabelManager';
 import ReadReplicaQueueManager from '../../components/ReadReplicaQueueManager';
 import '../Dashboard.css';
 import {
@@ -59,6 +51,30 @@ import {
 } from '../../services/admin/systemAdminService';
 
 import { planLabel } from './adminUtils';
+
+// ponytail: lazy-load heavy admin panels so the AdminDashboardInner chunk stays ≤ 200 kB;
+// each panel is only fetched when its tab is activated.
+const LazySystemHealthPanel = React.lazy(() => import('../../components/SystemHealthPanel'));
+const LazyErrorPerformancePanel = React.lazy(() => import('../../components/ErrorPerformancePanel'));
+const LazyStorageBackupPanel = React.lazy(() => import('../../components/StorageBackupPanel'));
+const LazyBulkMaintenancePanel = React.lazy(() => import('../../components/BulkMaintenancePanel'));
+const LazyApiKeyManager = React.lazy(() => import('../../components/ApiKeyManager'));
+const LazyWebhookManager = React.lazy(() => import('../../components/WebhookManager'));
+const LazyIntegrationMarketplace = React.lazy(() => import('../../components/IntegrationMarketplace'));
+const LazyWhiteLabelManager = React.lazy(() => import('../../components/WhiteLabelManager'));
+
+function PanelLoader() {
+  return (
+    <div className="p-8 text-center text-gray-600">
+      <div className="mx-auto mb-3 w-8 h-8 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin" />
+      Đang tải panel...
+    </div>
+  );
+}
+
+function LazyPanel({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<PanelLoader />}>{children}</Suspense>;
+}
 
 function Pagination({
   page,
@@ -984,25 +1000,25 @@ export default function AdminDashboardInner({ activeTab }: AdminDashboardInnerPr
 
     {activeTab === 'notifications' && <NotificationManager />}
 
-    {activeTab === 'health' && <SystemHealthPanel />}
+    {activeTab === 'health' && <LazyPanel><LazySystemHealthPanel /></LazyPanel>}
 
-    {activeTab === 'errors' && <ErrorPerformancePanel />}
+    {activeTab === 'errors' && <LazyPanel><LazyErrorPerformancePanel /></LazyPanel>}
 
-    {activeTab === 'storage' && <StorageBackupPanel />}
+    {activeTab === 'storage' && <LazyPanel><LazyStorageBackupPanel /></LazyPanel>}
 
-    {activeTab === 'bulkMaintenance' && <BulkMaintenancePanel />}
+    {activeTab === 'bulkMaintenance' && <LazyPanel><LazyBulkMaintenancePanel /></LazyPanel>}
 
-    {activeTab === 'apiKeys' && <ApiKeyManager />}
+    {activeTab === 'apiKeys' && <LazyPanel><LazyApiKeyManager /></LazyPanel>}
 
-    {activeTab === 'webhooks' && <WebhookManager />}
+    {activeTab === 'webhooks' && <LazyPanel><LazyWebhookManager /></LazyPanel>}
 
-    {activeTab === 'integrations' && <IntegrationMarketplace />}
+    {activeTab === 'integrations' && <LazyPanel><LazyIntegrationMarketplace /></LazyPanel>}
 
     {activeTab === 'twoFactor' && <TwoFactorManager />}
 
     {activeTab === 'compliance' && <ComplianceManager />}
 
-    {activeTab === 'whiteLabel' && <WhiteLabelManager />}
+    {activeTab === 'whiteLabel' && <LazyPanel><LazyWhiteLabelManager /></LazyPanel>}
 
     {activeTab === 'readReplicaQueue' && <ReadReplicaQueueManager />}
 
