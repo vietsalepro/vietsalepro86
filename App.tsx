@@ -1346,6 +1346,7 @@ function AppContent() {
       <ToastProvider>
         <Routes>
           <Route path="/admin" element={<Navigate to="/admin/overview" replace />} />
+          <Route path="/" element={<Navigate to="/admin/overview" replace />} />
           <Route path="/admin/*" element={<AdminSuspense><AdminLayout /></AdminSuspense>}>
             <Route index element={<Navigate to="/admin/overview" replace />} />
             <Route path="overview" element={<AdminSuspense><AdminOverview /></AdminSuspense>} />
