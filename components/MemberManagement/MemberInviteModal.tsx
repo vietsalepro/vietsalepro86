@@ -13,11 +13,13 @@ interface MemberInviteModalProps {
   onInvited?: () => void;
 }
 
+// FIX [6.4]: Add 'viewer' role
 const ROLES: { value: TenantRole; label: string }[] = [
   { value: 'admin', label: 'Admin' },
   { value: 'cashier', label: 'Thu ngân' },
   { value: 'inventory_manager', label: 'Quản lý kho' },
   { value: 'accountant', label: 'Kế toán' },
+  { value: 'viewer', label: 'Người xem' },
 ];
 
 const MAX_EMAILS = 50;

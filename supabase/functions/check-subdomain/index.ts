@@ -93,10 +93,12 @@ serve(async (req) => {
       return jsonResponse({ available: false }, 200);
     }
 
+    // FIX [6.6]: Exclude archived tenants from subdomain uniqueness check
     const { data: existingTenant, error: existsError } = await supabaseAdmin
       .from('tenants')
       .select('id')
       .eq('subdomain', s)
+      .not('status', 'eq', 'archived')
       .maybeSingle();
 
     if (existsError) throw existsError;

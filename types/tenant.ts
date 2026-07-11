@@ -5,7 +5,8 @@
 export type TenantStatus = 'active' | 'suspended' | 'trial' | 'pending' | 'archived' | 'read_only';
 export type TenantPlan = 'free' | 'vip';
 
-export type TenantRole = 'admin' | 'cashier' | 'inventory_manager' | 'accountant';
+// FIX [6.4]: Add 'viewer' role (SELECT-only permission, no mutations)
+export type TenantRole = 'admin' | 'cashier' | 'inventory_manager' | 'accountant' | 'viewer';
 
 export type TenantIsolationMode = 'shared' | 'schema' | 'project';
 

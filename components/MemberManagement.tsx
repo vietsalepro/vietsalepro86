@@ -35,7 +35,8 @@ import { MemberInviteModal } from './MemberManagement/MemberInviteModal';
 import { MemberBulkActions } from './MemberManagement/MemberBulkActions';
 import { MemberDetailDrawer } from './MemberManagement/MemberDetailDrawer';
 
-const ROLES: TenantRole[] = ['admin', 'cashier', 'inventory_manager', 'accountant'];
+// FIX [6.4]: Add 'viewer' role
+const ROLES: TenantRole[] = ['admin', 'cashier', 'inventory_manager', 'accountant', 'viewer'];
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 const SORTABLE_KEYS: SearchMembersParams['sortBy'][] = ['email', 'role', 'status', 'created_at', 'last_sign_in_at'];
 
@@ -45,6 +46,7 @@ const roleLabel = (role: TenantRole) => {
     case 'cashier': return 'Thu ngân';
     case 'inventory_manager': return 'Quản lý kho';
     case 'accountant': return 'Kế toán';
+    case 'viewer': return 'Người xem';
     default: return role;
   }
 };

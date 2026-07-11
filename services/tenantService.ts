@@ -90,11 +90,21 @@ const parseFunctionError = async (error: any): Promise<string> => {
 
 // --- Runtime validation helpers ---
 
-const VALID_ROLES = new Set(['admin', 'cashier', 'inventory_manager', 'accountant']);
+// FIX [6.1]: RFC 5322 compliant email validation pattern
+const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+// FIX [6.4]: Add 'viewer' role
+const VALID_ROLES = new Set(['admin', 'cashier', 'inventory_manager', 'accountant', 'viewer']);
 
 function validateRole(role: string): asserts role is TenantRole {
   if (!VALID_ROLES.has(role)) {
     throw new Error(`Vai trò không hợp lệ: "${role}". Chỉ chấp nhận: ${Array.from(VALID_ROLES).join(', ')}`);
+  }
+}
+
+function validateEmail(email: string): void {
+  if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
+    throw new Error(`Email không hợp lệ: "${email}"`);
   }
 }
 
@@ -488,11 +498,13 @@ export async function getTenant(id: string): Promise<Tenant | null> {
   return mapTenantFromDB(data);
 }
 
+// FIX [6.6]: Exclude archived tenants from subdomain lookup
 export async function getTenantBySubdomain(subdomain: string): Promise<Tenant | null> {
   const { data, error } = await supabase
     .from('tenants')
     .select('*')
     .eq('subdomain', subdomain)
+    .not('status', 'eq', 'archived')
     .maybeSingle();
 
   if (error) throw error;

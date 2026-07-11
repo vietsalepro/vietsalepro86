@@ -1219,12 +1219,16 @@ Grid vẫn cho phép đổi role/xoá owner qua dropdown/trash. `toggleMemberAct
 
 ## Phase 3: P2 - Medium Priority Fixes (roadmap)
 
+> **✅ Phase 3 đã hoàn thành và deploy lên production `rsialbfjswnrkzcxarnj` ngày 2026-07-11.**
+> - Migrations pushed: `20260712000008`, `20260712000009`, `20260712000010`
+> - Edge Functions deployed: `reset-password`, `delete-user`
+
 ### Task: [5.1] Thiếu audit log cho nhiều hành động
 
 **Objective:** Resolve Thiếu audit log cho nhiều hành động
 
 **Source:** ✅ **XÁC NHẬN**
-**Status:** ❌ Chưa fix
+**Status:** ✅ **Đã hoàn thành** - Migration `20260712000008_add_audit_log_triggers.sql` đã push lên production `rsialbfjswnrkzcxarnj`
 
 **Description:**
 
@@ -1297,7 +1301,7 @@ EXECUTE FUNCTION public.trg_tenant_memberships_audit();
 **Objective:** Resolve Thiếu rate limiting ở reset-password edge function
 
 **Source:** ✅ **XÁC NHẬN** - `supabase/functions/reset-password/index.ts` - KHÔNG có rate limiting
-**Status:** ❌ Chưa fix
+**Status:** ✅ **Đã hoàn thành** - Edge Function `reset-password` đã deploy lên production `rsialbfjswnrkzcxarnj` với rate limiting 3 lớp + audit log `MEMBER_PASSWORD_RESET`
 
 **Description:**
 
@@ -1406,7 +1410,7 @@ if (rateLimitResponse) return rateLimitResponse;
 **Objective:** Resolve Race condition trong invite-member
 
 **Source:** ✅ **XÁC NHẬN** - `supabase/functions/invite-member/index.ts` dòng 202-227
-**Status:** ⚠️ **Có race guard nhưng chưa đủ mạnh**
+**Status:** ✅ **Đã hoàn thành** - Migration `20260712000009_add_advisory_lock_function.sql` đã push lên production `rsialbfjswnrkzcxarnj`
 
 **Description:**
 
@@ -1475,7 +1479,7 @@ $$;
 **Objective:** Resolve Thiếu runtime validation cho role
 
 **Source:** ✅ **XÁC NHẬN** - `services/tenantService.ts` dòng 528-543
-**Status:** ❌ Chưa fix
+**Status:** ✅ **Đã hoàn thành** - `validateRole()` được gọi trong `inviteMember()`, `inviteMemberByEmail()` và `updateMemberRole()`
 
 **Description:**
 
@@ -1536,7 +1540,7 @@ export async function inviteMemberByEmail(
 **Objective:** Resolve 🔴 `get_tenant_usage_summary` chỉ cho system admin - tenant admin bị 403
 
 **Source:** ✅ **XÁC NHẬN** - `20260711000010_fix_invite_seat_limit_and_plan_sync.sql` dòng 74-76
-**Status:** ❌ Chưa fix
+**Status:** ✅ **Đã hoàn thành** - Migration `20260712000010_fix_get_tenant_usage_summary_tenant_admin.sql` đã push lên production `rsialbfjswnrkzcxarnj`
 
 **Description:**
 RPC `get_tenant_usage_summary` chỉ cho phép `is_system_admin()`. Tenant admin gọi từ `MemberInviteModal` sẽ bị 403.
@@ -1632,7 +1636,7 @@ $$;
 **Objective:** Resolve 🔴 Không có API xoá auth user độc lập
 
 **Source:** ✅ **XÁC NHẬN**
-**Status:** ❌ Chưa fix
+**Status:** ✅ **Đã hoàn thành** - Edge Function `delete-user` đã deploy lên production `rsialbfjswnrkzcxarnj` với các guard kiểm tra system admin / membership / ownership
 
 **Description:**
 `removeMember` chỉ xoá membership. User "orphan" vẫn tồn tại trong `auth.users`.

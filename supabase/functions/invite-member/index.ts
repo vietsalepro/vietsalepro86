@@ -10,7 +10,8 @@ const IP_RATE_LIMIT_WINDOW_MS = 60_000;
 const IP_RATE_LIMIT_MAX = 10;
 const TENANT_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const TENANT_RATE_LIMIT_MAX = 50;
-const ROLES = new Set(['admin', 'cashier', 'inventory_manager', 'accountant']);
+// FIX [6.4]: Add 'viewer' role
+const ROLES = new Set(['admin', 'cashier', 'inventory_manager', 'accountant', 'viewer']);
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const getClientIp = (req: Request): string => {
