@@ -738,7 +738,7 @@ export async function hardDeleteTenant(tenantId: string): Promise<void> {
   const { data, error } = await supabase.functions.invoke<{ success?: boolean; error?: string }>(
     'delete-tenant',
     {
-      body: { tenant_id: tenantId },
+      body: { tenant_id: tenantId, force: true },
     }
   );
 

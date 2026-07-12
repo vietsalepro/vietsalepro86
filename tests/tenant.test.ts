@@ -175,12 +175,22 @@ describe('system admin tenant management', () => {
     expect(restored.archivedAt).toBeFalsy();
   });
 
-  it('hardDeleteTenant xóa vĩnh viễn tenant và dữ liệu liên quan', async () => {
+  it('hardDeleteTenant gửi force: true và xóa vĩnh viễn tenant', async () => {
     setCurrentUserId('admin-008');
     setSystemAdmin(true);
     const tenant = await createTenantWithAdmin({ name: 'Cửa hàng Xóa', subdomain: 'store-delete', plan: 'free' });
 
+    const { supabase } = await import('../lib/supabase');
+    const invokeSpy = vi.spyOn(supabase.functions, 'invoke');
+
     await hardDeleteTenant(tenant.id);
+
+    expect(invokeSpy).toHaveBeenCalledWith(
+      'delete-tenant',
+      expect.objectContaining({
+        body: expect.objectContaining({ tenant_id: tenant.id, force: true }),
+      }),
+    );
 
     const found = await getTenantById(tenant.id);
     expect(found).toBeNull();
