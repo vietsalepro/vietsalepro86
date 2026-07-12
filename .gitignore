@@ -29,3 +29,8 @@ supabase/.temp/
 
 # Deployment backups
 backups/
+
+# Agent skill directories (local-only, not project code)
+skills/
+.skills/
+.agents/

@@ -31,6 +31,9 @@
     "node_modules",
     "template-ui",
     "OLD",
-    "supabase/functions"
+    "supabase/functions",
+    "skills",
+    ".skills",
+    ".agents"
   ]
 }
