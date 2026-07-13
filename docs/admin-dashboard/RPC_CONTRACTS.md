@@ -202,6 +202,7 @@ Bảng dưới đây được sinh tự động từ các file `services/**/*.ts
 | `set_default_plan_limits` | `services/operationsService.ts` |
 | `set_fraud_detection_config` | `services/fraudRetentionService.ts` |
 | `set_maintenance_mode` | `services/operationsService.ts` |
+| `set_tenant_subdomain` | `services/admin/tenantAdminService.ts` |
 | `toggle_tenant_member_active` | `services/tenantService.ts` |
 | `trigger_webhook_event` | `services/webhookService.ts` |
 | `unlock_login_attempts` | `services/systemAdminService.ts` |
