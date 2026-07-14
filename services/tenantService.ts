@@ -1012,18 +1012,8 @@ export async function getTenantMembersWithEmail(tenantId: string): Promise<Membe
   }));
 }
 
-export async function getStorageUsage(tenantId: string): Promise<StorageUsage> {
-  const { data, error } = await supabase.rpc('get_storage_usage', {
-    p_tenant_id: tenantId,
-  });
-  if (error) throw error;
-  return normalizeRpcObject(data, mapStorageUsageFromDB);
-}
-
 export async function getTenantStorageUsage(): Promise<StorageUsage> {
-  const { data, error } = await supabase.rpc('get_storage_usage', {
-    p_tenant_id: null,
-  });
+  const { data, error } = await supabase.rpc('get_tenant_storage_usage');
   if (error) throw error;
   return normalizeRpcObject(data, mapStorageUsageFromDB);
 }

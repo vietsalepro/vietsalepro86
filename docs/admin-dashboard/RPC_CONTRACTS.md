@@ -26,7 +26,7 @@ Tài liệu này liệt kê các Supabase RPC functions được gọi bởi adm
 | `update_tenant_member_role` | Cập nhật role member | `p_tenant_id`, `p_user_id`, `p_role` | `TenantMembership` | `services/tenantService.ts` |
 | `toggle_tenant_member_active` | Bật/tắt trạng thái member | `p_tenant_id`, `p_user_id`, `p_is_active` | `TenantMembership` | `services/tenantService.ts` |
 | `remove_tenant_member` | Xóa member khỏi tenant | `p_tenant_id`, `p_user_id` | — | `services/tenantService.ts` |
-| `get_storage_usage` | Lấy thông tin storage | `p_tenant_id` | `StorageUsage` | `services/tenantService.ts` |
+| `get_tenant_storage_usage` | Lấy thông tin storage | — | `StorageUsage` | `services/tenantService.ts` |
 | `get_system_overview` | Tổng quan hệ thống | — | `SystemOverview` | `services/tenantService.ts` |
 | `get_top_tenants` | Top tenants theo usage | `p_limit`, `p_offset` | `{ data: TopTenant[], count: number }` | `services/tenantService.ts` |
 | `get_tenant_growth` | Tăng trưởng tenants theo tháng | `p_months` | `TenantGrowthPoint[]` | `services/tenantService.ts` |
@@ -150,9 +150,9 @@ Bảng dưới đây được sinh tự động từ các file `services/**/*.ts
 | `get_rate_limit_logs` | `services/systemAdminService.ts` |
 | `get_read_replica_status` | `services/heavyOpsQueueService.ts` |
 | `get_revenue_metrics` | `services/admin/analyticsAdminService.ts` |
-| `get_storage_usage` | `services/tenantService.ts` |
 | `get_system_admins` | `services/systemAdminService.ts` |
 | `get_system_overview` | `services/tenantService.ts` |
+| `get_tenant_storage_usage` | `services/tenantService.ts` |
 | `get_tenant_by_domain` | `lib/tenant.ts` |
 | `get_tenant_by_subdomain` | `lib/tenant.ts` |
 | `get_tenant_feature_flags` | `services/tenantService.ts` |

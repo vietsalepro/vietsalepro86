@@ -2002,29 +2002,6 @@ const rpc = async (name: string, params: Record<string, any>) => {
     return { data: rows, error: null };
   }
 
-  if (name === 'get_storage_usage') {
-    if (!isSystemAdmin) {
-      return { data: null, error: { code: '42501', message: 'Chỉ system admin mới được xem storage usage' } };
-    }
-    const tenants = store.tenants
-      .filter(t => t.status !== 'archived')
-      .map(t => ({
-        id: t.id,
-        name: t.name,
-        subdomain: t.subdomain,
-        bytes: 1024 * 1024 * Math.floor(Math.random() * 50),
-        tables: [],
-      }));
-    return {
-      data: {
-        checkedAt: new Date().toISOString(),
-        totalDatabaseBytes: tenants.reduce((sum, t) => sum + t.bytes, 0),
-        tenants,
-      },
-      error: null,
-    };
-  }
-
   if (name === 'get_tenant_members_with_email') {
     const tenantId = params.p_tenant_id;
     if (!isSystemAdmin && !isTenantOwner(tenantId)) {
