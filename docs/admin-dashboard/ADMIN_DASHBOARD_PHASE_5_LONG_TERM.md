@@ -138,11 +138,13 @@ Có thể tắt nhanh các tính năng nâng cao (GDPR, audit realtime, advanced
 
 ### 4.2 Cách làm
 
-Sử dụng bảng `tenant_feature_flags` đã có:
+Sử dụng JSONB `tenants.settings->features` làm canonical source. Không có bảng `tenant_feature_flags`; các flag được định nghĩa trong `supabase/migrations/20250706000012_phase_p8_2_feature_flags.sql` và backfill mặc định trong `supabase/migrations/20250711000002_phase_5_long_term_admin_feature_flags.sql`.
+
+Đọc/ghi qua các RPC:
 
 ```sql
-ALTER TABLE public.tenant_feature_flags
-ADD COLUMN IF NOT EXISTS admin_gdpr_enabled BOOLEAN DEFAULT false;
+SELECT public.get_tenant_feature_flags('tenant-uuid');
+SELECT public.update_tenant_feature_flags('tenant-uuid', '{"adminGdprEnabled": true}'::jsonb);
 ```
 
 Trong UI:
@@ -151,6 +153,8 @@ Trong UI:
 const { gdprEnabled } = useAdminFeatureFlags();
 if (!gdprEnabled) return null;
 ```
+
+> **Close-out note (2026-07-18):** `useAdminFeatureFlags()` đã được định nghĩa nhưng chưa được bất kỳ page/component nào import. Các flag vẫn được toggle từ `pages/admin/Tenants.tsx` và lưu trong `tenants.settings->features` JSONB.
 
 ### 4.3 Tính năng nên đặt sau flag
 

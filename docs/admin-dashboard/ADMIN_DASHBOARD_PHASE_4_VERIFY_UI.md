@@ -45,7 +45,7 @@
 
 **Files liên quan:**
 - `services/admin/complianceAdminService.ts`
-- `pages/admin/ComplianceManager.tsx`
+- `pages/admin/Compliance.tsx`
 - `components/AdminSidebar.tsx` hoặc nơi render menu GDPR
 
 ### 2.2 `audit-log` Edge Function 400

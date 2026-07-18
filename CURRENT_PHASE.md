@@ -3,61 +3,64 @@
 **Program:** VietSalePro v7 — System Recovery Program  
 **Document Type:** Operational governance marker  
 **Effective Date:** 2026-07-17  
-**Status:** Closed — Phase 5 Entry Authorized  
+**Status:** Active — Phase 5  
 
 ---
 
 ## 1. Current Phase
 
-**Phase 4 — Closed**
-*Phase 5 entry criteria are satisfied; Phase 5 has not been opened.*
+**Phase 5 — Active**
+*Phase 5 entry criteria are satisfied; Phase 5 is formally opened.*
 
-**Purpose:** Rebuild the test and audit layers so that they validate the real canonical contract rather than a fictional or derived one. Phase 4 is now complete and accepted.
+**Purpose:** Align all operational and architectural documentation with the actual repository state and the canonical contract. Reconcile documentation and governance artifacts against the canonical migration chain and the accepted RPC contract; eliminate contradictions between claimed completion and code reality; regenerate RPC contract documentation from the canonical source; archive or update stale SQL fix documentation; and establish traceability for feature-flag configuration.
 
-**Strategic Objective:** With the canonical migration chain stabilized in Phase 2 and the service-layer RPC contract reconciled and formally accepted in Phase 3, the program now restores trust in the derived validation layer. This phase realigns test mocks and assertions that currently implement or assume missing RPCs, redirects operational audit tooling that compares code against a markdown contract document instead of the migration chain, and establishes continuous integration gates that compare derived artifacts against the canonical source. The result is a validation layer whose passing state implies the real production contract holds, not a fictional one.
+**Strategic Objective:** With the canonical migration chain stabilized in Phase 2, the service-layer RPC contract reconciled and formally accepted in Phase 3, and the test and audit layers realigned in Phase 4, the program now restores consistency in documentation and derived artifacts. This phase re-aligns operational and architectural documentation with repository reality, regenerates contract documentation from the canonical source, and removes stale claims of completion that the code contradicts.
 
 ---
 
 ## 2. Phase Scope
 
-Exactly as defined in `SYSTEM_RECOVERY_MASTER_PLAN.md`, §4 "Recovery Phases — Phase 4":
+Exactly as defined in `SYSTEM_RECOVERY_MASTER_PLAN.md`, §4 "Recovery Phases — Phase 5":
 
-- Test mocks and test assertions that currently implement or assume missing RPCs.
-- Operational audit tooling that compares code against a markdown contract document instead of the migration chain.
-- Continuous integration gates that must compare derived artifacts against the canonical source.
+- Active plans, sub-phase plans, and implementation logs.
+- RPC contract documentation.
+- SQL fix documentation and audit reports.
+- Operational runbooks and feature-flag configuration references.
+- Any document that currently asserts completion that code reality contradicts.
 
 ---
 
 ## 3. Phase Entry Status
 
-All Phase 4 entry criteria from the Master Plan were satisfied. All Phase 4 exit criteria are now satisfied and Phase 4 is formally accepted.
+All Phase 5 entry criteria from the Master Plan are satisfied. Phase 4 is formally closed and accepted.
 
 | Entry Criterion | Evidence |
 |---|---|
-| Phase 3 exit criteria are satisfied | `PHASE3_ACCEPTANCE_RECORD.md` is accepted (Status: Accepted, 2026-07-14); all Phase 3 exit criteria EC-1…EC-5 recorded as PASS with independent verification. |
-| Canonical migration chain, schema artifact, and reconciled RPC contract are accepted | `PHASE3_ACCEPTANCE_RECORD.md` §6 accepts D-P3-01…04; `supabase/schema.sql`, generated `database.types.ts`, and `D-P3-01_Reconciled_RPC_Contract.md` are present and accepted. |
-| Test and audit tooling inventory from SCAR Phase 4 is available | `SCAR_PHASE4_REPORT.md` is present in the repository working tree and available to the program team. |
+| Phase 3 and Phase 4 exit criteria are satisfied | `PHASE3_ACCEPTANCE_RECORD.md` is accepted (Status: Accepted, 2026-07-14); `PHASE4_ACCEPTANCE_RECORD.md` is accepted (Status: Accepted, 2026-07-17); all Phase 4 exit criteria EC-1…EC-4 recorded as PASS / Accepted. |
+| Canonical migration chain, reconciled RPC contract, and validated test/audit gates are accepted | `D-P3-01_Reconciled_RPC_Contract.md` accepted; `PHASE4_ACCEPTANCE_RECORD.md` §4 accepts D-P4-01…D-P4-04; canonical audit, TypeScript, and Vitest gates pass. |
+| Inventory of documentation / governance contradictions from SCAR Phase 4 is available | `PHASE4_RECOVERY_MAPPING_VALIDATION.md`, `PROGRAM_RECOVERY_AUTHORIZATION_ERRATA.md`, and `SCAR_PHASE4_REPORT.md` are present in the repository working tree. |
 
-**Exit Status:** `PHASE4_ACCEPTANCE_RECORD.md` (Status: Accepted, 2026-07-17) records all Phase 4 exit criteria EC-1…EC-4 as PASS / Accepted. `PHASE4_FINAL_CERTIFICATION.md` verdict is **A. Phase 4 Complete**. The Recovery Program is closed and no Recovery Wave remains open.
+**Exit Status:** Phase 5 exit criteria are not yet evaluated. This document marks Phase 5 as formally opened and active.
 
-Phase Entry Gate (Master Plan §7): PASS — signed acceptance present; all entry criteria met; all exit criteria met; 0 Critical / 0 Major risks; no unresolved critical blocker. See `PHASE4_REAUTHORIZATION_REVIEW.md` §5 and `PHASE4_ACCEPTANCE_RECORD.md`.
+Phase Entry Gate (Master Plan §7): PASS — `PHASE5_OPENING_AUTHORIZATION.md` (2026-07-17) formally opens Phase 5; `PHASE5_READINESS_AUTHORIZATION_RERUN.md` (2026-07-17) verdict is **A. READY FOR PHASE 5**; all Phase 5 entry criteria met; no unresolved critical blocker.
 
 ---
 
 ## 4. Phase Success Criteria
 
-Phase 4 exit criteria from the Master Plan have been independently verified and accepted. They are recorded as PASS / Accepted in `PHASE4_ACCEPTANCE_RECORD.md` (2026-07-17):
+Phase 5 exit criteria from the Master Plan are the success criteria for this phase. They will be independently verified and accepted before Phase 5 is declared complete:
 
-- Test mocks are derived from or validated against the canonical migration contract.
-- Passing tests imply that the corresponding production path will not fail on the previously known contract breaks.
-- The operational audit script compares service-layer RPC calls against the canonical migration chain, not against another derived document.
-- CI gates fail when a derived artifact diverges from the canonical source.
+- All active plans describe statuses consistent with repository reality.
+- RPC contract documentation is derived from or validated against the canonical migration chain.
+- Stale SQL fix documentation is archived or updated to reflect the current migration state.
+- Feature-flag configuration is traceable to the migration or code that consumes it.
+- No official document claims completion for a capability whose canonical contract is absent or broken.
 
 ---
 
 ## 5. Phase Constraints
 
-The following are explicitly prohibited during Phase 4:
+The following are explicitly prohibited during Phase 5 unless separately approved:
 
 - No feature development.
 - No architecture redesign.
@@ -66,20 +69,20 @@ The following are explicitly prohibited during Phase 4:
 - No implementation outside an approved `CURRENT_TASK`.
 - No new master plans, new program hierarchies, or competing sources of program status.
 - No modification of code, migrations, or tests to advance this phase except through an authorized `CURRENT_TASK`.
-- No generation of implementation tasks other than through the Phase 4 `CURRENT_TASK` rule defined in Section 8 below.
+- No generation of implementation tasks other than through the Phase 5 `CURRENT_TASK` rule defined in Section 8 below.
 
 ---
 
 ## 6. Phase Deliverables
 
-Expected deliverables from the Master Plan for Phase 4:
+Expected deliverables from the Master Plan for Phase 5:
 
-1. Validated Test Base
-2. Canonical Audit Gate Definition
-3. CI Gate Evidence
-4. Test-Audit Traceability Report
+1. Reconciled Documentation Set (D-P5-01)
+2. Regenerated RPC Contract Document (D-P5-02)
+3. Updated Program Logs & Reports (D-P5-03)
+4. Feature-Flag Configuration Traceability Record (D-P5-04)
 
-Validation (Master Plan §4 Phase 4 Validation): a deliberate injection of a non-existent RPC call is caught by the audit gate and by the test base; the audit gate reports zero missing RPCs against the canonical migration chain.
+Validation (Master Plan §4 Phase 5 Validation): documentation-to-code diff shows no unresolved contradictions; architecture authority confirms that contract documentation is derived from the canonical source.
 
 ---
 
@@ -89,16 +92,17 @@ Validation (Master Plan §4 Phase 4 Validation): a deliberate injection of a non
 
 **Architecture authority:** Named authority in the Charter; owns conformance of all technical decisions to the canonical migration-first principle and the derived-validation-layer boundary.
 
-**Acceptance authority:** Program Sponsor accepts the Phase 4 exit evidence and the validated test/audit layer.
+**Acceptance authority:** Program Sponsor accepts the Phase 5 exit evidence and the reconciled documentation set.
 
 **Escalation:** Disputes over scope, authority, or phase exit are escalated to the Program Sponsor per the Charter.
 
 **Quality Gates:**
-- Test mocks and assertions are traceable to the canonical migration contract.
-- A deliberately injected non-existent RPC call is caught by both the audit gate and the test base.
-- The operational audit script compares service-layer RPC calls against the canonical migration chain, not a derived document.
-- CI gates fail when a derived artifact diverges from the canonical source.
-- All `CURRENT_TASK`s produced during Phase 4 map to a Phase 4 objective and are inside Phase 4 scope.
+- All active plans describe statuses consistent with repository reality.
+- RPC contract documentation is derived from or validated against the canonical migration chain.
+- Stale SQL fix documentation is archived or updated to reflect the current migration state.
+- Feature-flag configuration is traceable to the migration or code that consumes it.
+- No official document claims completion for a capability whose canonical contract is absent or broken.
+- All `CURRENT_TASK`s produced during Phase 5 map to a Phase 5 objective and are inside Phase 5 scope.
 
 ---
 
@@ -106,39 +110,35 @@ Validation (Master Plan §4 Phase 4 Validation): a deliberate injection of a non
 
 `CURRENT_TASK` documents may only be generated when:
 
-- The task maps directly to one Phase 4 objective.
-- The task remains strictly inside Phase 4 scope as defined in Section 2.
-- The task satisfies Phase 4 constraints as defined in Section 5.
-- The task produces evidence required by the Phase 4 exit criteria.
+- The task maps directly to one Phase 5 objective.
+- The task remains strictly inside Phase 5 scope as defined in Section 2.
+- The task satisfies Phase 5 constraints as defined in Section 5.
+- The task produces evidence required by the Phase 5 exit criteria or deliverables.
 
-`CURRENT_TASK`s are operational work units that translate Phase 4 intent into bounded validation-layer realignment activity. They are not implementation documents unless explicitly authorized as such within the Phase 4 scope.
+`CURRENT_TASK`s are operational work units that translate Phase 5 intent into bounded documentation and derived-artifact reconciliation activity. They are not implementation documents unless explicitly authorized as such within the Phase 5 scope.
 
-**Governance transition note:** Phase 4 is now closed. No new Phase 4 `CURRENT_TASK` may be generated. A new `CURRENT_TASK` may only be created when Phase 5 is formally opened.
+**Governance transition note:** Phase 4 is closed. Phase 5 is now formally opened and active. A Phase 5 `CURRENT_TASK` may be created only when it satisfies the conditions above and is approved by the Program Manager.
 
 ---
 
 ## 9. Phase Completion Statement
 
-Phase 3 exit criteria and deliverables have been verified and formally accepted in `PHASE3_ACCEPTANCE_RECORD.md` (Status: Accepted, 2026-07-14). Phase 3 is officially complete and closed. Phase 4 is now closed and certified complete.
+Phase 4 exit criteria and deliverables have been verified and formally accepted in `PHASE4_ACCEPTANCE_RECORD.md` (Status: Accepted, 2026-07-17). `PHASE4_FINAL_CERTIFICATION.md` verdict is **A. Phase 4 Complete** (2026-07-17). Phase 4 is officially complete and closed.
 
-- `PHASE4_ACCEPTANCE_RECORD.md` is accepted (Status: Accepted, 2026-07-17). All Phase 4 deliverables (D-P4-01…D-P4-04) and exit criteria (EC-1…EC-4) are PASS / Accepted.
-- `PHASE4_FINAL_CERTIFICATION.md` verdict is **A. Phase 4 Complete** (2026-07-17). All residual observations have been removed from the Phase 4 blocker list.
 - The Recovery Program is closed. Recovery Wave-05 is formally accepted and no Recovery Wave remains open.
 - All Phase 5 entry criteria from `SYSTEM_RECOVERY_MASTER_PLAN.md` §4 Phase 5 are satisfied.
-- Phase 5 is **not** opened by this document. Phase 5 will only be opened by a subsequent authorized Phase 5 operational marker.
+- Phase 5 is formally opened by `PHASE5_OPENING_AUTHORIZATION.md` (2026-07-17) and is active as of the effective date of this document.
 
-**Uncommitted Phase 4 artifacts and code changes — governance note:** `PHASE5_READINESS_AUTHORIZATION.md` §4.2 Blocker #4 identifies uncommitted Phase 4 artifacts and implementation changes (e.g., `scripts/audit-rpc-contracts.ts`, `tests/mocks/supabase.ts`) as a Phase 5 readiness concern. This condition is acknowledged and recorded as a governance note; it is not a Phase 4 exit criterion and does not affect the certified completion of Phase 4. No commit is performed as part of this transition implementation. The uncommitted changes must be addressed (committed or dispositioned through configuration-management authority) before `PHASE5_READINESS_AUTHORIZATION.md` is re-issued as **A. READY FOR PHASE 5** and before Phase 5 is opened.
+**Governance transition note:** This document marks the operational opening of Phase 5. No engineering work may begin until an approved Phase 5 `CURRENT_TASK` is issued.
 
-**Phase 5 Readiness re-evaluation:** Applying this document does not by itself change the `PHASE5_READINESS_AUTHORIZATION.md` verdict. The Program Manager must re-run the Phase 5 Readiness Authorization and obtain verdict **A. READY FOR PHASE 5** before any Phase 5 engineering work or `CURRENT_TASK` is authorized.
-
-**Governance transition verification / sign-off:**
+**Phase 5 Active governance verification / sign-off:**
 
 | Role | Name | Signature / Acknowledgment | Date |
 |---|---|---|---|
-| Program Manager | | Acknowledged — Phase 4 closed; Phase 5 entry authorized but not opened | 2026-07-17 |
-| Architecture Authority | | Acknowledged — contract and canonical-source state consistent | 2026-07-17 |
-| Program Sponsor | | Acknowledged — Phase 5 not opened; re-evaluation required before Phase 5 activation | 2026-07-17 |
+| Program Manager | *(as named in `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §9)* | Acknowledged — Phase 5 opened and active; Phase 4 closed | 2026-07-17 |
+| Architecture Authority | *(as named in `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §9)* | Acknowledged — canonical-source state consistent; documentation reconciliation scope in force | 2026-07-17 |
+| Program Sponsor | *(as named in `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §9)* | Acknowledged — Phase 5 opened; first `CURRENT_TASK` requires separate authorization | 2026-07-17 |
 
 ---
 
-*Basis: `SYSTEM_RECOVERY_MASTER_PLAN.md`, `PHASE3_ACCEPTANCE_RECORD.md`, `PHASE4_REAUTHORIZATION_REVIEW.md`, `PHASE4_ACCEPTANCE_RECORD.md`, `PHASE4_FINAL_CERTIFICATION.md`, `PHASE5_READINESS_AUTHORIZATION.md`, `UNIFIED_PROGRAM_STATE.md`.*
+*Basis: `SYSTEM_RECOVERY_MASTER_PLAN.md` §4 Phase 5, `PHASE3_ACCEPTANCE_RECORD.md`, `PHASE4_REAUTHORIZATION_REVIEW.md`, `PHASE4_ACCEPTANCE_RECORD.md`, `PHASE4_FINAL_CERTIFICATION.md`, `PHASE5_READINESS_AUTHORIZATION_RERUN.md`, `PHASE5_OPENING_AUTHORIZATION.md`, `UNIFIED_PROGRAM_STATE.md`.*

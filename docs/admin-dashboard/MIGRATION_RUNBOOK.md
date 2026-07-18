@@ -50,6 +50,7 @@ npx vitest run    # Unit + integration tests
 ### Phase 1 — Layout & Routing
 
 - Split `pages/SystemAdminDashboard.tsx` into focused pages under `pages/admin/`.
+  - **Close-out note (2026-07-18):** This split is planned but not yet complete. `pages/SystemAdminDashboard.tsx` still exists as a separate monolith alongside the new `pages/admin/*.tsx` pages.
 - Introduce `/admin/*` route structure in `App.tsx`.
 - Keep existing `AdminShell`, `AdminSidebar`, `AdminTabs` but make them composable.
 - **Basejump reference**: UI patterns (`AccountSelector`, `UserAccountButton`, `DashboardHeader`) from Section 3.9.

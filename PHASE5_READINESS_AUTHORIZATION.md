@@ -89,9 +89,9 @@ Before a Phase 5 Readiness Authorization can be issued as **A. READY FOR PHASE 5
 
 | Role | Name / Identifier | Signature | Date |
 |---|---|---|---|
-| Program Manager | *(as named in `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §9)* | | 2026-07-17 |
-| Architecture Authority | *(as named in `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §9)* | | 2026-07-17 |
-| Program Sponsor | *(as named in `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §9)* | | |
+| Program Manager | *(as named in `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §9)* | Acknowledged — Phase 5 readiness re-run complete | 2026-07-17 |
+| Architecture Authority | *(as named in `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §9)* | Acknowledged — canonical-source and contract state consistent | 2026-07-17 |
+| Program Sponsor | *(as named in `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §9)* | Acknowledged — Phase 5 readiness confirmed | 2026-07-17 |
 
 ---
 

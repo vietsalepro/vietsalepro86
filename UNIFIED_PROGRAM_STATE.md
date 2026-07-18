@@ -26,11 +26,11 @@ This document is the single authoritative statement of program status for the Vi
 
 ## 3. Current Phase
 
-**Active Phase:** Phase 4 — Closed; Phase 5 Entry Authorized  
-**Purpose:** Rebuild the test and audit layers to validate the real canonical migration contract; now complete.  
-**Entry Status:** All Phase 4 entry criteria were satisfied.  
-**Exit Status:** Formal acceptance recorded in `PHASE4_ACCEPTANCE_RECORD.md` (Status: Accepted, 2026-07-17); final certification recorded in `PHASE4_FINAL_CERTIFICATION.md` (Verdict: A. Phase 4 Complete, 2026-07-17); Recovery Program closed.  
-**Source Document:** `CURRENT_PHASE.md`, `SYSTEM_RECOVERY_MASTER_PLAN.md` §4 Phase 4.
+**Active Phase:** Phase 5 — Active  
+**Purpose:** Align all operational and architectural documentation with the actual repository state and the canonical contract.  
+**Entry Status:** All Phase 5 entry criteria from `SYSTEM_RECOVERY_MASTER_PLAN.md` §4 Phase 5 are satisfied; `PHASE5_OPENING_AUTHORIZATION.md` (2026-07-17) formally opened Phase 5.  
+**Exit Status:** Not yet evaluated. Phase 5 exit criteria and deliverables will be verified and accepted before Phase 6 entry.  
+**Source Document:** `CURRENT_PHASE.md`, `SYSTEM_RECOVERY_MASTER_PLAN.md` §4 Phase 5.
 
 ---
 
@@ -48,11 +48,11 @@ Program (Charter)
 
 | Level | Document / Artifact | Approval Authority |
 |---|---|---|
-| Program | `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` | Program Sponsor |
-| Phase | `CURRENT_PHASE.md`, `SYSTEM_RECOVERY_MASTER_PLAN.md` | Program Manager, with architecture authority input |
-| Milestone | Recorded in program records | Program Manager |
-| CURRENT_TASK | `CURRENT_TASK.md` (this and future operational work orders) | Program Manager / delegated engineering lead |
-| Implementation | Engineering execution | Engineering team, monitored by Program Manager |
+| **Program** | `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` | Program Sponsor |
+| **Phase** | `CURRENT_PHASE.md`, `SYSTEM_RECOVERY_MASTER_PLAN.md` | Program Manager, with architecture authority input |
+| **Milestone** | Recorded in program records | Program Manager |
+| **CURRENT_TASK** | `CURRENT_TASK.md` (this and future operational work orders) | Program Manager / delegated engineering lead |
+| **Implementation** | Engineering execution | Engineering team, monitored by Program Manager |
 
 ---
 
@@ -64,7 +64,9 @@ The following documents are approved as the governing basis of the program. They
 |---|---|---|
 | `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` | Program charter and scope authority | Approved for Establishment |
 | `SYSTEM_RECOVERY_MASTER_PLAN.md` | Phase structure and recovery strategy | Proposed — Pending Program Sponsor Approval |
-| `CURRENT_PHASE.md` | Operational marker for the active phase | Closed — Phase 5 Entry Authorized |
+| `CURRENT_PHASE.md` | Operational marker for the active phase | Active — Phase 5 |
+| `PHASE5_OPENING_AUTHORIZATION.md` | Phase 5 opening authorization | Accepted / Opened |
+| `PHASE5_READINESS_AUTHORIZATION_RERUN.md` | Phase 5 readiness authorization | A. READY FOR PHASE 5 |
 | `STRATEGIC_DECISION_REPORT.md` | Selected recovery strategy (Option B) | Approved basis |
 | `STRATEGIC_RECOVERY_ANALYSIS.md` | Recoverability assessment and inventory | Approved basis |
 | SCAR Phase 1–4 Reports | Assessment evidence and findings | Approved basis |
@@ -93,10 +95,10 @@ All future status reporting must derive from this Unified Program State and the 
 | Area | State | Evidence |
 |---|---|---|
 | Program | Active, chartered | `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §1–§6 |
-| Phase | Phase 4 complete / closed; Phase 5 entry criteria satisfied; Phase 5 not yet opened | `CURRENT_PHASE.md` §3, §4, §9; `PHASE4_ACCEPTANCE_RECORD.md`; `PHASE4_FINAL_CERTIFICATION.md`; `SYSTEM_RECOVERY_MASTER_PLAN.md` §4 Phase 5 |
-| Governance | Converged; all conflicting planning tracks superseded; Phase 4 certified complete | This document, Section 6; `PHASE4_FINAL_CERTIFICATION.md` |
+| Phase | Phase 5 — Active; Phase 4 closed and certified complete; Recovery Program closed | `CURRENT_PHASE.md` §1, §3, §9; `PHASE5_OPENING_AUTHORIZATION.md`; `PHASE4_ACCEPTANCE_RECORD.md`; `PHASE4_FINAL_CERTIFICATION.md`; `PHASE5_READINESS_AUTHORIZATION_RERUN.md` |
+| Governance | Converged; all conflicting planning tracks superseded; Phase 4 certified complete; Phase 5 opened | This document, Section 6; `PHASE4_FINAL_CERTIFICATION.md`; `PHASE5_OPENING_AUTHORIZATION.md` |
 | Contract trust | Restored through accepted canonical migration chain, reconciled RPC contract, and validated test/audit gates (per Phase 3 and Phase 4 acceptance records) | `PHASE3_ACCEPTANCE_RECORD.md`; `PHASE4_ACCEPTANCE_RECORD.md`; `D-P3-01_Reconciled_RPC_Contract.md` |
-| Engineering work | Phase 4 implementation complete; no Phase 5 work authorized until Phase 5 is formally opened | `CURRENT_PHASE.md` §5, §9; `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §10 |
+| Engineering work | Phase 5 opened; no Phase 5 `CURRENT_TASK` authorized until one is created per Phase 5 scope | `CURRENT_PHASE.md` §5, §8; `PHASE5_OPENING_AUTHORIZATION.md` §9 |
 
 No other program status is active.
 
@@ -126,27 +128,27 @@ No other individual or document may override this authority on contract-layer ma
 
 ## 10. Scope Authority
 
-The **Program Manager** is responsible for enforcing the in-scope / out-of-scope boundaries defined in `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §4 and §5. Scope expansion requests must be documented, assessed against the charter, and approved by the Program Sponsor (with architecture input) before being accepted.
+The **Program Manager** is responsible for enforcing the in-scope / out-of-scope boundaries defined in `SYSTEM_RECOVERY_MASTER_PLAN.md` §4 Phase 5 and `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §4 and §5. Scope expansion requests must be documented, assessed against the charter, and approved by the Program Sponsor (with architecture input) before being accepted.
 
-For the current transition state, scope is limited to:
+For the current phase, scope is limited to Phase 5 as defined in `SYSTEM_RECOVERY_MASTER_PLAN.md` §4:
 
-- Program governance-state synchronization.
-- Official program state and single source of program status.
-- Reconciliation of existing planning tracks into one program view.
-- Communication protocol for status, exceptions, and scope-change requests.
+- Active plans, sub-phase plans, and implementation logs.
+- RPC contract documentation.
+- SQL fix documentation and audit reports.
+- Operational runbooks and feature-flag configuration references.
+- Any document that currently asserts completion that code reality contradicts.
 
-No Phase 5 engineering work, migration changes, feature development, architecture redesign, or unrelated bug fixing may begin until Phase 5 is formally opened.
+No Phase 6 engineering work, migration changes, feature development, architecture redesign, or unrelated bug fixing may begin until Phase 5 exit criteria are satisfied and Phase 6 is formally opened.
 
 ---
 
 ## 11. Next Approved Step
 
-The next approved actions are:
+The next approved action is:
 
-1. The Program Manager re-runs the `PHASE5_READINESS_AUTHORIZATION.md` assessment. Only an updated verdict of **A. READY FOR PHASE 5** authorizes the operational opening of Phase 5.
-2. The Program Manager and configuration-management authority disposition the uncommitted Phase 4 artifacts and implementation changes identified in `PHASE5_READINESS_AUTHORIZATION.md` §4.2 Blocker #4 (e.g., `scripts/audit-rpc-contracts.ts`, `tests/mocks/supabase.ts`). This is a governance/hygiene precondition; no commit is performed by this transition implementation.
-3. Upon Program Sponsor / Program Manager authorization, update `CURRENT_PHASE.md` to open Phase 5 as the active phase and create the first authorized Phase 5 `CURRENT_TASK`.
-4. No Phase 5 engineering work may begin until Phase 5 is formally opened and the Readiness Authorization is re-issued as **A. READY FOR PHASE 5**.
+1. The Program Manager authorizes the first Phase 5 `CURRENT_TASK` that maps directly to a Phase 5 objective, remains strictly within Phase 5 scope, and produces evidence required by one or more Phase 5 exit criteria or deliverables.
+
+No Phase 5 engineering implementation may begin until the first `CURRENT_TASK` is formally approved.
 
 ---
 
@@ -155,13 +157,15 @@ The next approved actions are:
 | Claim | Evidence |
 |---|---|
 | Program chartered | `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §1, §3, §7, §8 |
-| Phase 4 entry criteria satisfied | `CURRENT_PHASE.md` §3; `PHASE4_REAUTHORIZATION_REVIEW.md` §4 |
+| Phase 4 entry criteria satisfied | `CURRENT_PHASE.md` §3 (Phase 4); `PHASE4_REAUTHORIZATION_REVIEW.md` §4 |
 | Phase 4 exit criteria accepted | `PHASE4_ACCEPTANCE_RECORD.md` (Status: Accepted, 2026-07-17); `PHASE4_FINAL_CERTIFICATION.md` (Verdict: A. Phase 4 Complete, 2026-07-17) |
+| Phase 5 entry criteria satisfied | `PHASE5_READINESS_AUTHORIZATION_RERUN.md` §5; `PHASE5_OPENING_AUTHORIZATION.md` §1–§2 |
+| Phase 5 formally opened | `PHASE5_OPENING_AUTHORIZATION.md` (Verdict: Phase 5 is formally opened, 2026-07-17) |
 | Strategy = Option B | `STRATEGIC_DECISION_REPORT.md` §Executive Summary, §Final Strategic Decision |
 | Conflicting governance tracks exist | `STRATEGIC_DECISION_REPORT.md` §Current Architecture State — Governance; `STRATEGIC_RECOVERY_ANALYSIS.md` DG-5 |
 | Conflicting tracks superseded | This document, Section 6 |
 | Decision / architecture / scope authority defined | `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §9 |
-| Phase 4 scope and constraints completed | `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §4–§5, §10; `CURRENT_PHASE.md` §2, §5 |
+| Phase 5 scope and constraints defined | `SYSTEM_RECOVERY_MASTER_PLAN.md` §4 Phase 5; `CURRENT_PHASE.md` §2, §5 |
 | Only one program state exists | This document is the sole active `UNIFIED_PROGRAM_STATE.md`; no competing unified state document exists in the repository. |
 
 ---
@@ -171,19 +175,19 @@ The next approved actions are:
 This Unified Program State is complete when the Program Sponsor records formal acceptance. Acceptance confirms that:
 
 1. Only one active program exists: VietSalePro v7 — System Recovery Program.
-2. The active phase is **Phase 4 — Closed; Phase 5 Entry Authorized**. Phase 5 is **not** opened by this document.
+2. The active phase is **Phase 5 — Active**. Phase 4 is closed and certified complete. Phase 5 is formally opened.
 3. Only one authoritative program state exists: this document.
 4. All previously conflicting planning states remain formally superseded.
 5. The governance hierarchy, decision authority, architecture authority, and scope authority are acknowledged and in force.
-6. The Recovery Program is closed and no Recovery Wave remains open.
-7. Phase 5 entry criteria are satisfied, but Phase 5 will only be opened by a subsequent authorized Phase 5 operational marker and after `PHASE5_READINESS_AUTHORIZATION.md` is re-issued as **A. READY FOR PHASE 5**.
+6. Phase 4 is closed and no Recovery Wave remains open.
+7. Phase 5 entry criteria are satisfied and Phase 5 is active. A Phase 5 `CURRENT_TASK` may be created when authorized.
 
 **Acceptance Record**
 
 | Role | Name | Signature / Acknowledgment | Date |
 |---|---|---|---|
-| Program Sponsor | | Acknowledged — Phase 4 closed; Phase 5 entry authorized; Phase 5 not opened | 2026-07-17 |
-| Program Manager | | Acknowledged — governance markers synchronized; re-evaluation of Phase 5 Readiness required | 2026-07-17 |
-| Architecture Authority | | Acknowledged — canonical source and contract state consistent | 2026-07-17 |
+| Program Sponsor | *(as named in `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §9)* | Acknowledged — Phase 5 opened and active; Phase 4 closed | 2026-07-17 |
+| Program Manager | *(as named in `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §9)* | Acknowledged — governance markers synchronized to Phase 5 Active | 2026-07-17 |
+| Architecture Authority | *(as named in `SYSTEM_RECOVERY_PROGRAM_CHARTER.md` §9)* | Acknowledged — canonical source and contract state consistent | 2026-07-17 |
 
 Acceptance of this Unified Program State transition is formally recorded. Full Phase 4 acceptance is documented in `PHASE4_ACCEPTANCE_RECORD.md` and final certification in `PHASE4_FINAL_CERTIFICATION.md`.

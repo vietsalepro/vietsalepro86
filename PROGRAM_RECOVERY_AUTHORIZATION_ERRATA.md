@@ -219,3 +219,9 @@ Hành động cần thiết:
 ---
 
 *Tài liệu này chỉ ghi nhận Errata. Không implement code. Không tự quyết định Domain. Không tiếp tục Recovery.*
+
+---
+
+## Errata — Phase 5 Close-out (2026-07-18)
+
+Service handlers now exist for the six Domain B RPCs (`generate_tenant_license`, `validate_tenant_license`, `accept_invitation`, `lookup_invitation`, `get_revenue_metrics`, `get_churn_cohort_metrics`) in `services/admin/licenseService.ts`, `services/admin/memberAdminService.ts`, `services/admin/analyticsAdminService.ts`, and `services/billingAutomationService.ts`. The original mapping contradiction is acknowledged; the STOP condition is lifted for governance purposes and any remaining implementation gaps are routed to Phase 6 / product backlog.

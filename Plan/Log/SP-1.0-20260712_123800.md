@@ -63,3 +63,9 @@ npx vitest run tests/integration/tenant-isolation.test.ts # 3 tests pass
 - **Status push: PENDING** — chưa push lên origin (theo policy không push nếu không được yêu cầu rõ ràng).
 - Cần xác nhận trước khi push/Vercel deploy.
 - Không cần migration cho sub-phase này.
+
+---
+
+## Close-out Correction (2026-07-18)
+
+`PHASE5_DOCUMENTATION_CONTRADICTION_INVENTORY.md` C1 identified that `tests/test-helpers.ts` and `tests/test-helpers.test.ts` do not exist in the repository and therefore the test-helper work claimed in this log was not realized. This sub-phase is marked **incomplete** for close-out purposes; the helpers remain a future product-backlog item if still needed.
