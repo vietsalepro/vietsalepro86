@@ -146,6 +146,8 @@ Wave Authorization
         ↓
 Engineering Kickoff
         ↓
+Implementation Readiness Review
+        ↓
 Wave Implementation
         ↓
 Wave Verification
@@ -244,6 +246,8 @@ Wave Authorization
         ↓
 Engineering Kickoff
         ↓
+Implementation Readiness Review
+        ↓
 Wave Implementation
         ↓
 Wave Verification
@@ -311,12 +315,17 @@ Phase B Opening Authorization            : COMPLETE
 Phase B                                  : OPEN
 Remediation Master Plan                  : COMPLETE
 Program Owner Decisions                  : COMPLETE
-Wave Planning                            : AUTHORIZED
-Wave Authorization                       : READY TO START
-Engineering Kickoff                      : NOT STARTED
-Implementation                           : NOT STARTED
+Wave Planning                            : COMPLETE
+Wave-01 Authorization                  : COMPLETE
+Engineering Kickoff                      : COMPLETE
+Implementation Readiness Review          : COMPLETE
+Implementation                           : ACTIVE
+Wave-01 Progress                         : IN PROGRESS
+  Package-01                             : COMPLETE
+  Package-02                             : NOT STARTED
+  Package-03                             : NOT STARTED
 Program Status                           : ACTIVE
-(Updated by 13_ADMIN_DASHBOARD_PROGRAM_OWNER_DECISION_RECORD.md, 2026-07-20)
+(Updated by 17_ADMIN_DASHBOARD_WAVE-01_IMPLEMENTATION.md, 2026-07-20)
 ```
 
 ------------------------------------------------------------------------
@@ -349,6 +358,12 @@ Engineering Kickoff SHALL NOT begin until:
 -   Program Owner Decisions are completed.
 -   Wave Authorization has been approved.
 -   All governance gates have passed.
+
+Wave Implementation SHALL NOT begin until:
+
+-   Engineering Kickoff has been completed.
+-   Wave Implementation Readiness Review has been completed.
+-   Implementation has been formally authorized.
 
 Remediation Master Plan is a strategic planning document. It SHALL NOT
 perform:

@@ -51,6 +51,16 @@ serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return jsonResponse({ error: 'Missing Authorization header' }, 401);
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    if (userError || !user) {
+      return jsonResponse({ error: 'Invalid token' }, 401);
+    }
+
     const body = await req.json().catch(() => ({}));
     const type = body?.type;
 
