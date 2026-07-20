@@ -126,44 +126,34 @@ export async function getAdminAuditLogs(
   const limit = options.limit ?? 50;
   const offset = options.offset ?? 0;
 
-  let query = supabase
-    .from('audit_log')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false });
-
-  if (options.tenantId) {
-    query = query.eq('tenant_id', options.tenantId);
-  }
-  if (options.actorId) {
-    query = query.eq('actor_id', options.actorId);
-  }
-  if (options.action) {
-    query = query.eq('action', options.action);
-  }
-  if (options.entityType) {
-    query = query.ilike('entity_type', `%${options.entityType}%`);
-  }
-  if (options.entityId) {
-    query = query.eq('entity_id', options.entityId);
-  }
-  if (options.dateFrom) {
-    query = query.gte('created_at', options.dateFrom);
-  }
+  let dateTo: string | null = null;
   if (options.dateTo) {
-    // ponytail: bao gồm cả ngày kết thúc đến cuối ngày.
     const end = new Date(options.dateTo);
     end.setHours(23, 59, 59, 999);
-    query = query.lte('created_at', end.toISOString());
+    dateTo = end.toISOString();
   }
 
-  const { data, error, count } = await query.range(offset, offset + limit - 1);
+  const { data, error } = await supabase.rpc('get_admin_audit_logs', {
+    p_limit: limit,
+    p_offset: offset,
+    p_tenant_id: options.tenantId ?? null,
+    p_actor_id: options.actorId ?? null,
+    p_action: options.action ?? null,
+    p_entity_type: options.entityType ?? null,
+    p_entity_id: options.entityId ?? null,
+    p_date_from: options.dateFrom ?? null,
+    p_date_to: dateTo,
+  });
 
   if (error) {
     throw new AppError(error.message || 'Lỗi đọc audit log', 'AUDIT_LOG_READ_ERROR', { originalError: error });
   }
 
+  const rows = (data ?? []) as any[];
+  const count = rows.length ? Number(rows[0].total_count) : 0;
+
   return {
-    data: (data || []).map(mapAdminAuditLogFromDB),
+    data: rows.map(mapAdminAuditLogFromDB),
     count,
   };
 }
