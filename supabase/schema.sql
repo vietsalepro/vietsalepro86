@@ -15246,66 +15246,7 @@ CREATE TRIGGER trg_check_tenant_order_limit
 -- 1. RPC tạo tenant kèm admin (system admin thực hiện)
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION public.create_tenant_with_admin(
-  p_name TEXT,
-  p_subdomain TEXT,
-  p_plan TEXT DEFAULT 'free',
-  p_owner_user_id UUID DEFAULT NULL
-)
-RETURNS public.tenants
-LANGUAGE plpgsql
-SECURITY INVOKER
-AS $$
-DECLARE
-  v_owner_id UUID;
-  v_tenant public.tenants;
-  v_plan TEXT;
-BEGIN
-  -- ponytail: chỉ system admin được tạo tenant; rơi về lỗi 403 nếu không phải.
-  IF NOT public.is_system_admin() THEN
-    RAISE EXCEPTION 'Chỉ system admin mới được tạo tenant' USING ERRCODE = 'insufficient_privilege';
-  END IF;
 
-  IF p_name IS NULL OR TRIM(p_name) = '' THEN
-    RAISE EXCEPTION 'Tên cửa hàng không được để trống';
-  END IF;
-
-  IF p_subdomain IS NULL OR TRIM(p_subdomain) = '' THEN
-    RAISE EXCEPTION 'Subdomain không được để trống';
-  END IF;
-
-  v_plan := COALESCE(p_plan, 'free');
-  IF v_plan NOT IN ('free', 'vip') THEN
-    RAISE EXCEPTION 'Gói dịch vụ không hợp lệ: %', v_plan;
-  END IF;
-
-  v_owner_id := COALESCE(p_owner_user_id, auth.uid());
-  IF v_owner_id IS NULL THEN
-    RAISE EXCEPTION 'Không xác định được chủ sở hữu tenant';
-  END IF;
-
-  -- ponytail: subdomain unique đã có constraint, để lỗi tự nhiên nếu trùng.
-  INSERT INTO public.tenants (name, subdomain, plan, owner_id, status)
-  VALUES (TRIM(p_name), TRIM(p_subdomain), v_plan, v_owner_id, 'active')
-  RETURNING * INTO v_tenant;
-
-  -- Tạo subscription mặc định theo gói.
-  INSERT INTO public.tenant_subscriptions (tenant_id, plan, max_users, max_products, max_orders_per_month)
-  VALUES (
-    v_tenant.id,
-    v_plan,
-    CASE WHEN v_plan = 'free' THEN 1 ELSE 999999 END,
-    CASE WHEN v_plan = 'free' THEN 50 ELSE 999999 END,
-    CASE WHEN v_plan = 'free' THEN 300 ELSE 999999 END
-  );
-
-  -- Gán owner là admin của tenant.
-  INSERT INTO public.tenant_memberships (tenant_id, user_id, role)
-  VALUES (v_tenant.id, v_owner_id, 'admin');
-
-  RETURN v_tenant;
-END;
-$$;
 
 -- ============================================================
 -- 2. RPC cập nhật trạng thái tenant
@@ -17515,49 +17456,7 @@ $$;
 -- 4. RPC update_tenant
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION public.update_tenant(
-  p_tenant_id UUID,
-  p_name TEXT DEFAULT NULL,
-  p_plan TEXT DEFAULT NULL,
-  p_status TEXT DEFAULT NULL
-) RETURNS public.tenants LANGUAGE plpgsql SECURITY INVOKER AS $$
-DECLARE
-  v_tenant public.tenants;
-BEGIN
-  IF NOT public.is_system_admin() THEN
-    RAISE EXCEPTION 'Chỉ system admin mới được cập nhật tenant' USING ERRCODE = 'insufficient_privilege';
-  END IF;
 
-  IF p_name IS NOT NULL AND TRIM(p_name) = '' THEN
-    RAISE EXCEPTION 'Tên cửa hàng không được để trống';
-  END IF;
-
-  IF p_plan IS NOT NULL AND p_plan NOT IN ('free', 'vip') THEN
-    RAISE EXCEPTION 'Gói dịch vụ không hợp lệ: %', p_plan;
-  END IF;
-
-  IF p_status IS NOT NULL AND p_status NOT IN ('active', 'suspended', 'trial', 'pending', 'archived', 'read_only') THEN
-    RAISE EXCEPTION 'Trạng thái tenant không hợp lệ: %', p_status;
-  END IF;
-
-  UPDATE public.tenants
-  SET name = COALESCE(NULLIF(TRIM(p_name), ''), name),
-      plan = COALESCE(p_plan, plan),
-      status = COALESCE(p_status, status),
-      updated_at = now(),
-      archived_at = CASE WHEN COALESCE(p_status, status) = 'archived' THEN COALESCE(archived_at, now())
-                         WHEN p_status IS NOT NULL AND p_status <> 'archived' THEN NULL
-                         ELSE archived_at END
-  WHERE id = p_tenant_id
-  RETURNING * INTO v_tenant;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Không tìm thấy tenant: %', p_tenant_id;
-  END IF;
-
-  RETURN v_tenant;
-END;
-$$;
 
 -- ============================================================
 -- 5. RPC delete_tenant_safe (soft delete)
@@ -17699,85 +17598,7 @@ $$;
 -- 2. RPC cập nhật gói và giới hạn subscription
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION public.update_tenant_subscription(
-  p_tenant_id UUID,
-  p_plan TEXT DEFAULT NULL,
-  p_max_users INTEGER DEFAULT NULL,
-  p_max_products INTEGER DEFAULT NULL,
-  p_max_orders_per_month INTEGER DEFAULT NULL,
-  p_billing_status TEXT DEFAULT NULL,
-  p_expires_at TIMESTAMPTZ DEFAULT NULL
-)
-RETURNS public.tenant_subscriptions
-LANGUAGE plpgsql
-SECURITY INVOKER
-AS $$
-DECLARE
-  v_sub public.tenant_subscriptions%ROWTYPE;
-  v_tenant public.tenants%ROWTYPE;
-  v_new_plan TEXT;
-  v_new_max_users INTEGER;
-  v_new_max_products INTEGER;
-  v_new_max_orders INTEGER;
-BEGIN
-  IF NOT public.is_system_admin() THEN
-    RAISE EXCEPTION 'Chỉ system admin mới được cập nhật subscription' USING ERRCODE = 'insufficient_privilege';
-  END IF;
 
-  SELECT * INTO v_tenant FROM public.tenants WHERE id = p_tenant_id;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Không tìm thấy tenant: %', p_tenant_id;
-  END IF;
-
-  SELECT * INTO v_sub FROM public.tenant_subscriptions WHERE tenant_id = p_tenant_id;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Không tìm thấy subscription cho tenant: %', p_tenant_id;
-  END IF;
-
-  v_new_plan := COALESCE(p_plan, v_sub.plan);
-  IF v_new_plan NOT IN ('free', 'vip') THEN
-    RAISE EXCEPTION 'Gói dịch vụ không hợp lệ: %', v_new_plan;
-  END IF;
-
-  -- ponytail: chỉ áp giới hạn mặc định của gói mới khi admin explicit đổi gói VÀ không truyền custom limits.
-  --          Nếu có truyền bất kỳ custom limit nào, giữ nguyên giá trị hiện tại cho các trường còn lại.
-  v_new_max_users := COALESCE(p_max_users, CASE WHEN p_plan IS NOT NULL AND p_max_users IS NULL AND p_max_products IS NULL AND p_max_orders_per_month IS NULL THEN
-    CASE WHEN v_new_plan = 'free' THEN 1 WHEN v_new_plan = 'vip' THEN 999 ELSE v_sub.max_users END
-  ELSE v_sub.max_users END);
-  v_new_max_products := COALESCE(p_max_products, CASE WHEN p_plan IS NOT NULL AND p_max_users IS NULL AND p_max_products IS NULL AND p_max_orders_per_month IS NULL THEN
-    CASE WHEN v_new_plan = 'free' THEN 50 WHEN v_new_plan = 'vip' THEN 999999 ELSE v_sub.max_products END
-  ELSE v_sub.max_products END);
-  v_new_max_orders := COALESCE(p_max_orders_per_month, CASE WHEN p_plan IS NOT NULL AND p_max_users IS NULL AND p_max_products IS NULL AND p_max_orders_per_month IS NULL THEN
-    CASE WHEN v_new_plan = 'free' THEN 300 WHEN v_new_plan = 'vip' THEN 999999 ELSE v_sub.max_orders_per_month END
-  ELSE v_sub.max_orders_per_month END);
-
-  IF v_new_max_users <= 0 OR v_new_max_products <= 0 OR v_new_max_orders <= 0 THEN
-    RAISE EXCEPTION 'Giới hạn phải lớn hơn 0';
-  END IF;
-
-  IF p_billing_status IS NOT NULL AND p_billing_status NOT IN ('ok', 'past_due', 'suspended', 'cancelled') THEN
-    RAISE EXCEPTION 'Trạng thái thanh toán không hợp lệ: %', p_billing_status;
-  END IF;
-
-  UPDATE public.tenant_subscriptions
-  SET plan = v_new_plan,
-      max_users = v_new_max_users,
-      max_products = v_new_max_products,
-      max_orders_per_month = v_new_max_orders,
-      billing_status = COALESCE(p_billing_status, billing_status),
-      expires_at = p_expires_at,
-      updated_at = now()
-  WHERE tenant_id = p_tenant_id
-  RETURNING * INTO v_sub;
-
-  -- ponytail: đồng bộ cột plan trên tenants để các trigger/truy vấn cũ vẫn nhất quán.
-  UPDATE public.tenants
-  SET plan = v_new_plan, updated_at = now()
-  WHERE id = p_tenant_id;
-
-  RETURN v_sub;
-END;
-$$;
 
 -- ============================================================
 -- 3. RPC reset counter đơn hàng tháng (ví dụ sau khi nâng cấp gói)
@@ -18637,66 +18458,7 @@ $$;
 -- 9. Cập nhật tạo tenant để dùng default limits từ system_settings
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION public.create_tenant_with_admin(
-  p_name TEXT,
-  p_subdomain TEXT,
-  p_plan TEXT DEFAULT 'free',
-  p_owner_user_id UUID DEFAULT NULL
-)
-RETURNS public.tenants
-LANGUAGE plpgsql
-SECURITY INVOKER
-AS $$
-DECLARE
-  v_owner_id UUID;
-  v_tenant public.tenants;
-  v_plan TEXT;
-  v_limits JSONB;
-BEGIN
-  IF NOT public.is_system_admin() THEN
-    RAISE EXCEPTION 'Chỉ system admin mới được tạo tenant' USING ERRCODE = 'insufficient_privilege';
-  END IF;
 
-  IF p_name IS NULL OR TRIM(p_name) = '' THEN
-    RAISE EXCEPTION 'Tên cửa hàng không được để trống';
-  END IF;
-
-  IF p_subdomain IS NULL OR TRIM(p_subdomain) = '' THEN
-    RAISE EXCEPTION 'Subdomain không được để trống';
-  END IF;
-
-  v_plan := COALESCE(p_plan, 'free');
-  IF v_plan NOT IN ('free', 'vip') THEN
-    RAISE EXCEPTION 'Gói dịch vụ không hợp lệ: %', v_plan;
-  END IF;
-
-  v_owner_id := COALESCE(p_owner_user_id, auth.uid());
-  IF v_owner_id IS NULL THEN
-    RAISE EXCEPTION 'Không xác định được chủ sở hữu tenant';
-  END IF;
-
-  INSERT INTO public.tenants (name, subdomain, plan, owner_id, status)
-  VALUES (TRIM(p_name), TRIM(p_subdomain), v_plan, v_owner_id, 'active')
-  RETURNING * INTO v_tenant;
-
-  -- ponytail: đọc giới hạn mặc định từ system_settings; fallback về hardcoded nếu chưa có.
-  v_limits := public.get_default_plan_limit_values(v_plan);
-
-  INSERT INTO public.tenant_subscriptions (tenant_id, plan, max_users, max_products, max_orders_per_month)
-  VALUES (
-    v_tenant.id,
-    v_plan,
-    COALESCE((v_limits->>'max_users')::INTEGER, CASE WHEN v_plan = 'free' THEN 1 ELSE 999 END),
-    COALESCE((v_limits->>'max_products')::INTEGER, CASE WHEN v_plan = 'free' THEN 50 ELSE 999999 END),
-    COALESCE((v_limits->>'max_orders_per_month')::INTEGER, CASE WHEN v_plan = 'free' THEN 300 ELSE 999999 END)
-  );
-
-  INSERT INTO public.tenant_memberships (tenant_id, user_id, role)
-  VALUES (v_tenant.id, v_owner_id, 'admin');
-
-  RETURN v_tenant;
-END;
-$$;
 
 -- ============================================================
 -- 10. Ghi log sau mỗi lần chạy data retention
@@ -19550,49 +19312,7 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.update_tenant(
-  p_tenant_id UUID,
-  p_name TEXT DEFAULT NULL,
-  p_plan TEXT DEFAULT NULL,
-  p_status TEXT DEFAULT NULL
-) RETURNS public.tenants LANGUAGE plpgsql SECURITY INVOKER AS $$
-DECLARE
-  v_tenant public.tenants;
-BEGIN
-  IF NOT public.is_system_admin() THEN
-    RAISE EXCEPTION 'Chỉ system admin mới được cập nhật tenant' USING ERRCODE = 'insufficient_privilege';
-  END IF;
 
-  IF p_name IS NOT NULL AND TRIM(p_name) = '' THEN
-    RAISE EXCEPTION 'Tên cửa hàng không được để trống';
-  END IF;
-
-  IF p_plan IS NOT NULL AND p_plan NOT IN ('free', 'vip') THEN
-    RAISE EXCEPTION 'Gói dịch vụ không hợp lệ: %', p_plan;
-  END IF;
-
-  IF p_status IS NOT NULL AND p_status NOT IN ('active', 'suspended', 'trial', 'pending', 'archived', 'read_only') THEN
-    RAISE EXCEPTION 'Trạng thái tenant không hợp lệ: %', p_status;
-  END IF;
-
-  UPDATE public.tenants
-  SET name = COALESCE(NULLIF(TRIM(p_name), ''), name),
-      plan = COALESCE(p_plan, plan),
-      status = COALESCE(p_status, status),
-      updated_at = now(),
-      archived_at = CASE WHEN COALESCE(p_status, status) = 'archived' THEN COALESCE(archived_at, now())
-                         WHEN p_status IS NOT NULL AND p_status <> 'archived' THEN NULL
-                         ELSE archived_at END
-  WHERE id = p_tenant_id
-  RETURNING * INTO v_tenant;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Không tìm thấy tenant: %', p_tenant_id;
-  END IF;
-
-  RETURN v_tenant;
-END;
-$$;
 
 -- === MIGRATION END: 20250706000006_phase_p7_0_read_only_tenant_infra.sql ===
 
@@ -20809,129 +20529,13 @@ $$;
 -- 10. Cập nhật update_tenant: validate plan từ plans
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION public.update_tenant(
-  p_tenant_id UUID,
-  p_name TEXT DEFAULT NULL,
-  p_plan TEXT DEFAULT NULL,
-  p_status TEXT DEFAULT NULL
-)
-RETURNS public.tenants
-LANGUAGE plpgsql
-SECURITY INVOKER
-AS $$
-DECLARE
-  v_tenant public.tenants;
-BEGIN
-  IF NOT public.is_system_admin() THEN
-    RAISE EXCEPTION 'Chỉ system admin mới được cập nhật tenant' USING ERRCODE = 'insufficient_privilege';
-  END IF;
 
-  SELECT * INTO v_tenant FROM public.tenants WHERE id = p_tenant_id;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Không tìm thấy tenant: %', p_tenant_id;
-  END IF;
-
-  IF p_name IS NOT NULL AND TRIM(p_name) = '' THEN
-    RAISE EXCEPTION 'Tên cửa hàng không được để trống';
-  END IF;
-
-  IF p_plan IS NOT NULL AND NOT public.is_valid_plan(p_plan) THEN
-    RAISE EXCEPTION 'Gói dịch vụ không hợp lệ: %', p_plan;
-  END IF;
-
-  UPDATE public.tenants
-  SET name = COALESCE(NULLIF(TRIM(p_name), ''), name),
-      plan = COALESCE(p_plan, plan),
-      status = COALESCE(p_status, status),
-      updated_at = now()
-  WHERE id = p_tenant_id
-  RETURNING * INTO v_tenant;
-
-  RETURN v_tenant;
-END;
-$$;
 
 -- ============================================================
 -- 11. Cập nhật update_tenant_subscription: validate plan từ plans, dùng limits từ plans khi đổi gói
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION public.update_tenant_subscription(
-  p_tenant_id UUID,
-  p_plan TEXT DEFAULT NULL,
-  p_max_users INTEGER DEFAULT NULL,
-  p_max_products INTEGER DEFAULT NULL,
-  p_max_orders_per_month INTEGER DEFAULT NULL,
-  p_billing_status TEXT DEFAULT NULL,
-  p_expires_at TIMESTAMPTZ DEFAULT NULL
-)
-RETURNS public.tenant_subscriptions
-LANGUAGE plpgsql
-SECURITY INVOKER
-AS $$
-DECLARE
-  v_sub public.tenant_subscriptions%ROWTYPE;
-  v_tenant public.tenants%ROWTYPE;
-  v_new_plan TEXT;
-  v_new_max_users INTEGER;
-  v_new_max_products INTEGER;
-  v_new_max_orders INTEGER;
-  v_limits JSONB;
-BEGIN
-  IF NOT public.is_system_admin() THEN
-    RAISE EXCEPTION 'Chỉ system admin mới được cập nhật subscription' USING ERRCODE = 'insufficient_privilege';
-  END IF;
 
-  SELECT * INTO v_tenant FROM public.tenants WHERE id = p_tenant_id;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Không tìm thấy tenant: %', p_tenant_id;
-  END IF;
-
-  SELECT * INTO v_sub FROM public.tenant_subscriptions WHERE tenant_id = p_tenant_id;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Không tìm thấy subscription cho tenant: %', p_tenant_id;
-  END IF;
-
-  v_new_plan := COALESCE(p_plan, v_sub.plan);
-  IF NOT public.is_valid_plan(v_new_plan) THEN
-    RAISE EXCEPTION 'Gói dịch vụ không hợp lệ: %', v_new_plan;
-  END IF;
-
-  -- ponytail: nếu đổi gói và không truyền custom limits, áp giới hạn mặc định của gói mới.
-  --          Giữ custom limits hiện tại nếu user đã tự nhập.
-  IF p_plan IS NOT NULL THEN
-    v_limits := public.get_default_plan_limit_values(v_new_plan);
-  END IF;
-
-  v_new_max_users := COALESCE(p_max_users, CASE WHEN p_plan IS NOT NULL THEN (v_limits->>'max_users')::INTEGER ELSE v_sub.max_users END);
-  v_new_max_products := COALESCE(p_max_products, CASE WHEN p_plan IS NOT NULL THEN (v_limits->>'max_products')::INTEGER ELSE v_sub.max_products END);
-  v_new_max_orders := COALESCE(p_max_orders_per_month, CASE WHEN p_plan IS NOT NULL THEN (v_limits->>'max_orders_per_month')::INTEGER ELSE v_sub.max_orders_per_month END);
-
-  IF v_new_max_users <= 0 OR v_new_max_products <= 0 OR v_new_max_orders <= 0 THEN
-    RAISE EXCEPTION 'Giới hạn phải lớn hơn 0';
-  END IF;
-
-  IF p_billing_status IS NOT NULL AND p_billing_status NOT IN ('ok', 'past_due', 'suspended', 'cancelled') THEN
-    RAISE EXCEPTION 'Trạng thái thanh toán không hợp lệ: %', p_billing_status;
-  END IF;
-
-  UPDATE public.tenant_subscriptions
-  SET plan = v_new_plan,
-      max_users = v_new_max_users,
-      max_products = v_new_max_products,
-      max_orders_per_month = v_new_max_orders,
-      billing_status = COALESCE(p_billing_status, billing_status),
-      expires_at = p_expires_at,
-      updated_at = now()
-  WHERE tenant_id = p_tenant_id
-  RETURNING * INTO v_sub;
-
-  UPDATE public.tenants
-  SET plan = v_new_plan, updated_at = now()
-  WHERE id = p_tenant_id;
-
-  RETURN v_sub;
-END;
-$$;
 
 -- ============================================================
 -- 12. Cập nhật create_invoice: lấy đơn giá từ plans
@@ -28631,85 +28235,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_tenants_isolation_project_ref_unique
 -- 2. Update RPC update_tenant to manage isolation metadata
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION public.update_tenant(
-  p_tenant_id UUID,
-  p_name TEXT DEFAULT NULL,
-  p_plan TEXT DEFAULT NULL,
-  p_status TEXT DEFAULT NULL,
-  p_isolation_mode TEXT DEFAULT NULL,
-  p_isolation_schema TEXT DEFAULT NULL,
-  p_isolation_project_ref TEXT DEFAULT NULL
-)
-RETURNS public.tenants
-LANGUAGE plpgsql
-SECURITY INVOKER
-AS $$
-DECLARE
-  v_tenant public.tenants;
-  v_new_isolation_mode TEXT;
-  v_new_plan TEXT;
-BEGIN
-  IF NOT public.is_system_admin() THEN
-    RAISE EXCEPTION 'Chỉ system admin mới được cập nhật tenant' USING ERRCODE = 'insufficient_privilege';
-  END IF;
 
-  SELECT * INTO v_tenant FROM public.tenants WHERE id = p_tenant_id;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Không tìm thấy tenant: %', p_tenant_id;
-  END IF;
-
-  IF p_name IS NOT NULL AND TRIM(p_name) = '' THEN
-    RAISE EXCEPTION 'Tên cửa hàng không được để trống';
-  END IF;
-
-  IF p_plan IS NOT NULL AND NOT public.is_valid_plan(p_plan) THEN
-    RAISE EXCEPTION 'Gói dịch vụ không hợp lệ: %', p_plan;
-  END IF;
-
-  IF p_status IS NOT NULL AND p_status NOT IN ('active', 'suspended', 'trial', 'pending', 'archived', 'read_only') THEN
-    RAISE EXCEPTION 'Trạng thái tenant không hợp lệ: %', p_status;
-  END IF;
-
-  v_new_isolation_mode := COALESCE(p_isolation_mode, v_tenant.isolation_mode);
-  IF v_new_isolation_mode IS NOT NULL AND v_new_isolation_mode NOT IN ('shared', 'schema', 'project') THEN
-    RAISE EXCEPTION 'Chế độ cô lập không hợp lệ: %', v_new_isolation_mode;
-  END IF;
-
-  v_new_plan := COALESCE(p_plan, v_tenant.plan);
-  -- ponytail: chỉ cho phép cô lập schema/project khi tenant là VIP (hoặc gói tùy chỉnh khác Free).
-  -- Nếu muốn downgrade về Free mà vẫn đang cô lập, phải chuyển về shared trước.
-  IF v_new_isolation_mode <> 'shared' AND v_new_plan = 'free' THEN
-    RAISE EXCEPTION 'Tenant gói Free không được phép cô lập schema/project. Hãy chuyển sang VIP hoặc để shared.';
-  END IF;
-
-  IF v_new_isolation_mode = 'schema' AND COALESCE(p_isolation_schema, v_tenant.isolation_schema) IS NULL THEN
-    RAISE EXCEPTION 'Chế độ schema cô lập yêu cầu tên schema (isolation_schema).';
-  END IF;
-
-  IF v_new_isolation_mode = 'project' AND COALESCE(p_isolation_project_ref, v_tenant.isolation_project_ref) IS NULL THEN
-    RAISE EXCEPTION 'Chế độ project cô lập yêu cầu project ref (isolation_project_ref).';
-  END IF;
-
-  UPDATE public.tenants
-  SET name = COALESCE(NULLIF(TRIM(p_name), ''), name),
-      plan = v_new_plan,
-      status = COALESCE(p_status, status),
-      isolation_mode = v_new_isolation_mode,
-      isolation_schema = CASE
-        WHEN p_isolation_mode = 'shared' THEN NULL
-        ELSE COALESCE(p_isolation_schema, isolation_schema)
-      END,
-      isolation_project_ref = CASE
-        WHEN p_isolation_mode = 'shared' THEN NULL
-        ELSE COALESCE(p_isolation_project_ref, isolation_project_ref)
-      END,
-      updated_at = now()
-  WHERE id = p_tenant_id
-  RETURNING * INTO v_tenant;
-
-  RETURN v_tenant;
-END;
-$$;
 
 -- ============================================================
 -- 3. RPC: get tenant isolation metadata (convenience)
@@ -28788,111 +28314,7 @@ $$;
 -- 3. RPC update_tenant extended with white-label / custom domain
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION public.update_tenant(
-  p_tenant_id UUID,
-  p_name TEXT DEFAULT NULL,
-  p_plan TEXT DEFAULT NULL,
-  p_status TEXT DEFAULT NULL,
-  p_isolation_mode TEXT DEFAULT NULL,
-  p_isolation_schema TEXT DEFAULT NULL,
-  p_isolation_project_ref TEXT DEFAULT NULL,
-  p_custom_domain TEXT DEFAULT NULL,
-  p_white_label JSONB DEFAULT NULL
-)
-RETURNS public.tenants
-LANGUAGE plpgsql
-SECURITY INVOKER
-AS $$
-DECLARE
-  v_tenant public.tenants;
-  v_new_isolation_mode TEXT;
-  v_new_plan TEXT;
-  v_domain TEXT;
-BEGIN
-  IF NOT public.is_system_admin() THEN
-    RAISE EXCEPTION 'Chỉ system admin mới được cập nhật tenant' USING ERRCODE = 'insufficient_privilege';
-  END IF;
 
-  SELECT * INTO v_tenant FROM public.tenants WHERE id = p_tenant_id;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Không tìm thấy tenant: %', p_tenant_id;
-  END IF;
-
-  IF p_name IS NOT NULL AND TRIM(p_name) = '' THEN
-    RAISE EXCEPTION 'Tên cửa hàng không được để trống';
-  END IF;
-
-  IF p_plan IS NOT NULL AND NOT public.is_valid_plan(p_plan) THEN
-    RAISE EXCEPTION 'Gói dịch vụ không hợp lệ: %', p_plan;
-  END IF;
-
-  IF p_status IS NOT NULL AND p_status NOT IN ('active', 'suspended', 'trial', 'pending', 'archived', 'read_only') THEN
-    RAISE EXCEPTION 'Trạng thái tenant không hợp lệ: %', p_status;
-  END IF;
-
-  v_new_isolation_mode := COALESCE(p_isolation_mode, v_tenant.isolation_mode);
-  IF v_new_isolation_mode IS NOT NULL AND v_new_isolation_mode NOT IN ('shared', 'schema', 'project') THEN
-    RAISE EXCEPTION 'Chế độ cô lập không hợp lệ: %', v_new_isolation_mode;
-  END IF;
-
-  v_new_plan := COALESCE(p_plan, v_tenant.plan);
-
-  -- ponytail: chỉ cho phép cô lập schema/project khi tenant là VIP.
-  IF v_new_isolation_mode <> 'shared' AND v_new_plan = 'free' THEN
-    RAISE EXCEPTION 'Tenant gói Free không được phép cô lập schema/project. Hãy chuyển sang VIP hoặc để shared.';
-  END IF;
-
-  IF v_new_isolation_mode = 'schema' AND COALESCE(p_isolation_schema, v_tenant.isolation_schema) IS NULL THEN
-    RAISE EXCEPTION 'Chế độ schema cô lập yêu cầu tên schema (isolation_schema).';
-  END IF;
-
-  IF v_new_isolation_mode = 'project' AND COALESCE(p_isolation_project_ref, v_tenant.isolation_project_ref) IS NULL THEN
-    RAISE EXCEPTION 'Chế độ project cô lập yêu cầu project ref (isolation_project_ref).';
-  END IF;
-
-  -- Validate custom domain (VIP only)
-  v_domain := NULLIF(TRIM(p_custom_domain), '');
-  IF v_domain IS NOT NULL THEN
-    IF v_new_plan = 'free' THEN
-      RAISE EXCEPTION 'Custom domain chỉ khả dụng cho tenant VIP.' USING ERRCODE = 'check_violation';
-    END IF;
-    IF v_domain !~ '^[a-z0-9][-a-z0-9]*(\.[-a-z0-9]+)+$' THEN
-      RAISE EXCEPTION 'Tên miền không hợp lệ: %', v_domain;
-    END IF;
-    IF EXISTS (
-      SELECT 1 FROM public.tenants
-      WHERE lower(custom_domain) = lower(v_domain)
-        AND id <> p_tenant_id
-    ) THEN
-      RAISE EXCEPTION 'Tên miền đã được sử dụng bởi tenant khác: %', v_domain;
-    END IF;
-  END IF;
-
-  UPDATE public.tenants
-  SET name = COALESCE(NULLIF(TRIM(p_name), ''), name),
-      plan = v_new_plan,
-      status = COALESCE(p_status, status),
-      isolation_mode = v_new_isolation_mode,
-      isolation_schema = CASE
-        WHEN p_isolation_mode = 'shared' THEN NULL
-        ELSE COALESCE(p_isolation_schema, isolation_schema)
-      END,
-      isolation_project_ref = CASE
-        WHEN p_isolation_mode = 'shared' THEN NULL
-        ELSE COALESCE(p_isolation_project_ref, isolation_project_ref)
-      END,
-      custom_domain = v_domain,
-      white_label = CASE
-        WHEN p_white_label IS NULL THEN white_label
-        ELSE p_white_label
-      END,
-      updated_at = now()
-  WHERE id = p_tenant_id
-  RETURNING * INTO v_tenant;
-
-  RETURN v_tenant;
-END;
-$$;
 
 -- === MIGRATION END: 20260708000001_phase_p18_2_white_label.sql ===
 
@@ -29217,126 +28639,7 @@ $$;
 -- 6. Extend update_tenant with read replica / connection pool config
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION public.update_tenant(
-  p_tenant_id UUID,
-  p_name TEXT DEFAULT NULL,
-  p_plan TEXT DEFAULT NULL,
-  p_status TEXT DEFAULT NULL,
-  p_isolation_mode TEXT DEFAULT NULL,
-  p_isolation_schema TEXT DEFAULT NULL,
-  p_isolation_project_ref TEXT DEFAULT NULL,
-  p_custom_domain TEXT DEFAULT NULL,
-  p_white_label JSONB DEFAULT NULL,
-  p_read_replica_url TEXT DEFAULT NULL,
-  p_connection_pool_config JSONB DEFAULT NULL
-)
-RETURNS public.tenants
-LANGUAGE plpgsql
-SECURITY INVOKER
-AS $$
-DECLARE
-  v_tenant public.tenants;
-  v_new_isolation_mode TEXT;
-  v_new_plan TEXT;
-  v_domain TEXT;
-BEGIN
-  IF NOT public.is_system_admin() THEN
-    RAISE EXCEPTION 'Chỉ system admin mới được cập nhật tenant' USING ERRCODE = 'insufficient_privilege';
-  END IF;
 
-  SELECT * INTO v_tenant FROM public.tenants WHERE id = p_tenant_id;
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Không tìm thấy tenant: %', p_tenant_id;
-  END IF;
-
-  IF p_name IS NOT NULL AND TRIM(p_name) = '' THEN
-    RAISE EXCEPTION 'Tên cửa hàng không được để trống';
-  END IF;
-
-  IF p_plan IS NOT NULL AND NOT public.is_valid_plan(p_plan) THEN
-    RAISE EXCEPTION 'Gói dịch vụ không hợp lệ: %', p_plan;
-  END IF;
-
-  IF p_status IS NOT NULL AND p_status NOT IN ('active', 'suspended', 'trial', 'pending', 'archived', 'read_only') THEN
-    RAISE EXCEPTION 'Trạng thái tenant không hợp lệ: %', p_status;
-  END IF;
-
-  v_new_isolation_mode := COALESCE(p_isolation_mode, v_tenant.isolation_mode);
-  IF v_new_isolation_mode IS NOT NULL AND v_new_isolation_mode NOT IN ('shared', 'schema', 'project') THEN
-    RAISE EXCEPTION 'Chế độ cô lập không hợp lệ: %', v_new_isolation_mode;
-  END IF;
-
-  v_new_plan := COALESCE(p_plan, v_tenant.plan);
-
-  -- ponytail: chỉ cho phép cô lập schema/project khi tenant là VIP.
-  IF v_new_isolation_mode <> 'shared' AND v_new_plan = 'free' THEN
-    RAISE EXCEPTION 'Tenant gói Free không được phép cô lập schema/project. Hãy chuyển sang VIP hoặc để shared.';
-  END IF;
-
-  IF v_new_isolation_mode = 'schema' AND COALESCE(p_isolation_schema, v_tenant.isolation_schema) IS NULL THEN
-    RAISE EXCEPTION 'Chế độ schema cô lập yêu cầu tên schema (isolation_schema).';
-  END IF;
-
-  IF v_new_isolation_mode = 'project' AND COALESCE(p_isolation_project_ref, v_tenant.isolation_project_ref) IS NULL THEN
-    RAISE EXCEPTION 'Chế độ project cô lập yêu cầu project ref (isolation_project_ref).';
-  END IF;
-
-  -- Validate custom domain (VIP only)
-  v_domain := NULLIF(TRIM(p_custom_domain), '');
-  IF v_domain IS NOT NULL THEN
-    IF v_new_plan = 'free' THEN
-      RAISE EXCEPTION 'Custom domain chỉ khả dụng cho tenant VIP.' USING ERRCODE = 'check_violation';
-    END IF;
-    IF v_domain !~ '^[a-z0-9][-a-z0-9]*(\.[-a-z0-9]+)+$' THEN
-      RAISE EXCEPTION 'Tên miền không hợp lệ: %', v_domain;
-    END IF;
-    IF EXISTS (
-      SELECT 1 FROM public.tenants
-      WHERE lower(custom_domain) = lower(v_domain)
-        AND id <> p_tenant_id
-    ) THEN
-      RAISE EXCEPTION 'Tên miền đã được sử dụng bởi tenant khác: %', v_domain;
-    END IF;
-  END IF;
-
-  -- ponytail: read replica / pool config chỉ lưu metadata, không tạo replica thật ở phase YAGNI.
-  IF p_read_replica_url IS NOT NULL AND TRIM(p_read_replica_url) = '' THEN
-    RAISE EXCEPTION 'read_replica_url không được để trống nếu được truyền';
-  END IF;
-
-  UPDATE public.tenants
-  SET name = COALESCE(NULLIF(TRIM(p_name), ''), name),
-      plan = v_new_plan,
-      status = COALESCE(p_status, status),
-      isolation_mode = v_new_isolation_mode,
-      isolation_schema = CASE
-        WHEN p_isolation_mode = 'shared' THEN NULL
-        ELSE COALESCE(p_isolation_schema, isolation_schema)
-      END,
-      isolation_project_ref = CASE
-        WHEN p_isolation_mode = 'shared' THEN NULL
-        ELSE COALESCE(p_isolation_project_ref, isolation_project_ref)
-      END,
-      custom_domain = v_domain,
-      white_label = CASE
-        WHEN p_white_label IS NULL THEN white_label
-        ELSE p_white_label
-      END,
-      read_replica_url = CASE
-        WHEN p_read_replica_url IS NULL THEN read_replica_url
-        ELSE NULLIF(TRIM(p_read_replica_url), '')
-      END,
-      connection_pool_config = CASE
-        WHEN p_connection_pool_config IS NULL THEN connection_pool_config
-        ELSE p_connection_pool_config
-      END,
-      updated_at = now()
-  WHERE id = p_tenant_id
-  RETURNING * INTO v_tenant;
-
-  RETURN v_tenant;
-END;
-$$;
 
 -- === MIGRATION END: 20260708000002_phase_p18_3_read_replica_queue.sql ===
 
@@ -36794,4 +36097,150 @@ GRANT EXECUTE ON FUNCTION public.get_db_index_stats() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_db_index_stats() TO service_role;
 
 -- === MIGRATION END: 20260728000000_sp5_6_db_maintenance.sql ===
+
+-- === MIGRATION START: 20260729000000_wave02_package01_log_view_rpc.sql ===
+-- SOURCE_PATH: C:\\PROJECT\\vietsalepro\\supabase\\migrations\\20260729000000_wave02_package01_log_view_rpc.sql
+
+CREATE OR REPLACE FUNCTION public.get_admin_audit_logs(
+  p_limit INT DEFAULT 100,
+  p_tenant_id UUID DEFAULT NULL
+)
+RETURNS TABLE (
+  id UUID,
+  tenant_id UUID,
+  actor_id UUID,
+  action TEXT,
+  entity_type TEXT,
+  entity_id UUID,
+  old_data JSONB,
+  new_data JSONB,
+  ip_address INET,
+  created_at TIMESTAMPTZ
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT public.is_system_admin() THEN
+    RAISE EXCEPTION 'Chỉ system admin mới được xem audit log' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  RETURN QUERY
+  SELECT l.id, l.tenant_id, l.actor_id, l.action, l.entity_type, l.entity_id, l.old_data, l.new_data, l.ip_address, l.created_at
+  FROM public.audit_log l
+  WHERE (p_tenant_id IS NULL OR l.tenant_id = p_tenant_id)
+  ORDER BY l.created_at DESC
+  LIMIT p_limit;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_admin_audit_logs(INT, UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_admin_audit_logs(INT, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_admin_audit_logs(INT, UUID) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.get_cron_job_logs(
+  p_limit INT DEFAULT 100
+)
+RETURNS TABLE (
+  id UUID,
+  job_name TEXT,
+  status TEXT,
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  details JSONB,
+  error_message TEXT,
+  retry_count INTEGER
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT public.is_system_admin() THEN
+    RAISE EXCEPTION 'Chỉ system admin mới được xem cron job log' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  RETURN QUERY
+  SELECT l.id, l.job_name, l.status, l.started_at, l.completed_at, l.details, l.error_message, l.retry_count
+  FROM public.cron_job_logs l
+  ORDER BY l.started_at DESC
+  LIMIT p_limit;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_cron_job_logs(INT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_cron_job_logs(INT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_cron_job_logs(INT) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.get_billing_reminder_logs(
+  p_limit INT DEFAULT 100,
+  p_tenant_id UUID DEFAULT NULL
+)
+RETURNS TABLE (
+  id UUID,
+  tenant_id UUID,
+  reminder_type TEXT,
+  status TEXT,
+  sent_at TIMESTAMPTZ,
+  error_message TEXT,
+  created_at TIMESTAMPTZ,
+  created_date DATE
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT public.is_system_admin() THEN
+    RAISE EXCEPTION 'Chỉ system admin mới được xem billing reminder log' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  RETURN QUERY
+  SELECT l.id, l.tenant_id, l.reminder_type, l.status, l.sent_at, l.error_message, l.created_at, l.created_date
+  FROM public.billing_reminder_logs l
+  WHERE (p_tenant_id IS NULL OR l.tenant_id = p_tenant_id)
+  ORDER BY l.created_at DESC
+  LIMIT p_limit;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_billing_reminder_logs(INT, UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_billing_reminder_logs(INT, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_billing_reminder_logs(INT, UUID) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.get_billing_email_logs(
+  p_limit INT DEFAULT 100,
+  p_tenant_id UUID DEFAULT NULL
+)
+RETURNS TABLE (
+  id UUID,
+  tenant_id UUID,
+  invoice_id UUID,
+  type TEXT,
+  recipient TEXT,
+  status TEXT,
+  provider_message_id TEXT,
+  error_message TEXT,
+  created_at TIMESTAMPTZ
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT public.is_system_admin() THEN
+    RAISE EXCEPTION 'Chỉ system admin mới được xem billing email log' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+  RETURN QUERY
+  SELECT l.id, l.tenant_id, l.invoice_id, l.type, l.recipient, l.status, l.provider_message_id, l.error_message, l.created_at
+  FROM public.billing_email_logs l
+  WHERE (p_tenant_id IS NULL OR l.tenant_id = p_tenant_id)
+  ORDER BY l.created_at DESC
+  LIMIT p_limit;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_billing_email_logs(INT, UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_billing_email_logs(INT, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_billing_email_logs(INT, UUID) TO service_role;
+
+-- === MIGRATION END: 20260729000000_wave02_package01_log_view_rpc.sql ===
 
