@@ -250,6 +250,14 @@ export async function acceptInvitation(token: string): Promise<TenantMembership>
   return mapMembershipFromDB(data);
 }
 
+export async function activateMembership(userId: string): Promise<{ success: boolean; error?: string }> {
+  const { error } = await supabase.rpc('activate_pending_memberships', { p_user_id: userId });
+  if (error) {
+    return { success: false, error: error.message };
+  }
+  return { success: true };
+}
+
 // ponytail: simple concurrency pool; keeps the same default as the old tenantService wrapper.
 async function runWithConcurrency<T>(items: string[], concurrency: number, fn: (item: string) => Promise<T>): Promise<PromiseSettledResult<T>[]> {
   const results: PromiseSettledResult<T>[] = [];

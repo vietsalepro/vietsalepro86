@@ -3,6 +3,7 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { writeAuditLog } from '../services/auditService';
 import { recordAdminLogin } from '../services/loginHistoryService';
+import { activateMembership } from '../services/admin/memberAdminService';
 import { isMfaRequired } from '../services/twoFactorService';
 
 interface AuthContextType {
@@ -87,9 +88,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
           status: 'success',
         }).catch(() => {});
-        Promise.resolve(
-          supabase.rpc('activate_pending_memberships', { p_user_id: newSession.user.id })
-        ).catch(() => {});
+        (async () => {
+          try {
+            const { success, error } = await activateMembership(newSession.user.id);
+            if (!success) {
+              console.error('[AuthContext] activateMembership failed:', error);
+            }
+          } catch (err) {
+            console.error('[AuthContext] Unexpected activation error:', err);
+          }
+        })();
       }
       setLoading(false);
     });
