@@ -1,11 +1,11 @@
 {
     "schema_version": 2,
-    "commit": "588588c408ce6747f43eef5e60f8b656e2ae2d55",
-    "indexed_at": "2026-07-22T01:51:51Z",
+    "commit": "e631dcd599928b5d06207629246fb745f13a59e6",
+    "indexed_at": "2026-07-22T02:17:52Z",
     "project": "C-PROJECT-vietsalepro",
-    "nodes": 28285,
-    "edges": 41969,
-    "original_size": 47382528,
-    "compressed_size": 7703203,
+    "nodes": 28312,
+    "edges": 41998,
+    "original_size": 47448064,
+    "compressed_size": 7728545,
     "compression_level": 3
 }

@@ -453,16 +453,12 @@ export async function removeMember(tenantId: string, userId: string): Promise<vo
 // --- Subscription ---
 
 export async function getTenantSubscription(tenantId: string): Promise<TenantSubscription | null> {
-  const { data, error } = await supabase
-    .from('tenant_subscriptions')
-    .select('*')
-    .eq('tenant_id', tenantId)
-    .single();
+  const { data, error } = await supabase.rpc('get_tenant_subscription', {
+    p_tenant_id: tenantId,
+  });
 
-  if (error) {
-    if (error.code === 'PGRST116') return null;
-    throw error;
-  }
+  if (error) throw error;
+  if (!data) return null;
   return mapSubscriptionFromDB(data);
 }
 

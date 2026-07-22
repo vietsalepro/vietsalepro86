@@ -577,3 +577,6 @@ verify_jwt = false
 
 [functions.cron-admin-tasks]
 verify_jwt = false
+
+[functions.check-subdomain]
+verify_jwt = false

@@ -4,6 +4,7 @@ import {
   normalizeSubdomain,
   isValidSubdomainFormat,
 } from '../../utils/subdomain';
+import { normalizeRpcArray } from '../../utils/service';
 import {
   isValidDomain as isValidCustomDomain,
   buildTxtRecord,
@@ -81,20 +82,17 @@ export async function getUserAccounts(userId: string): Promise<AccountWithRole[]
     return accounts.map((account) => ({ account, role: 'admin' as TenantRole }));
   }
 
-  const { data, error } = await supabase
-    .from('tenant_memberships')
-    .select('role, status, tenants (*)')
-    .eq('user_id', userId);
+  const { data, error } = await supabase.rpc('get_user_accounts', {
+    p_user_id: userId,
+  });
 
   if (error) throw error;
 
-  return (data || [])
-    .filter((row: any) => row.tenants)
-    .map((row: any) => ({
-      account: mapTenantFromDB(row.tenants),
-      role: row.role as TenantRole,
-      status: row.status as AccountWithRole['status'],
-    }));
+  return normalizeRpcArray(data, (row: any) => ({
+    account: mapTenantFromDB(row.tenants),
+    role: row.role as TenantRole,
+    status: row.status as AccountWithRole['status'],
+  }));
 }
 
 export async function getAccountMembers(accountId: string): Promise<TenantMembership[]> {
