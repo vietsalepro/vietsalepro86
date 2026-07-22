@@ -7,8 +7,8 @@
 **Acting Capacity:** Enterprise Program Management Office (PMO)  
 **Baseline:** AD-Baseline-1.0  
 **Repository Scope:** `C:\PROJECT\vietsalepro` @ commit `3a06a6d9` (RC-2026-07-19-01)  
-**Repository Artifacts Modified:** None (governance documentation only)  
-**Status:** Draft Complete — Pending PMO Certification
+**Repository Artifacts Modified:** `00_ADMIN_DASHBOARD_SYSTEM_REMEDIATION_PROGRAM_CHARTER.md`, `12_ADMIN_DASHBOARD_REMEDIATION_MASTER_PLAN.md`, `55_ADMIN_DASHBOARD_WAVE-04_DEPLOYMENT_SYNCHRONIZATION_AUTHORIZATION.md`, `55A_DEPLOYMENT_SYNCHRONIZATION_AUTHORIZATION_REPORT.md` (governance documentation only)  
+**Status:** Synchronized with Program Charter — Wave-04 Staging Deployment Synchronization COMPLETE (57); Wave-04 Staging Deployment Validation COMPLETE (58); Enterprise Browser Runtime Validation COMPLETE (58B) — FAIL; Wave-04 Production Deployment Authorization BLOCKED BY 58B FAIL
 
 ------------------------------------------------------------------------
 
@@ -731,7 +731,21 @@ Wave-04 Verification                          PASS WITH OBSERVATIONS (52)
         ↓
 Wave-04 Acceptance                            COMPLETE (53)
         ↓
-Wave-04 Deployment Synchronization            READY TO START
+Wave-04 Deployment Synchronization            COMPLETE (57)
+        ↓
+Wave-04 Staging Deployment Validation         COMPLETE (58)
+        ↓
+Enterprise Browser Runtime Validation         FAIL (58B)
+        ↓
+58B0 Staging Runtime Configuration Investigation  COMPLETE
+        ↓
+58B1 Preview Environment Remediation Authorization  COMPLETE
+        ↓
+58B2 Preview Environment Remediation          READY TO START
+        ↓
+58B Re-run                                    PENDING ENVIRONMENT REMEDIATION
+        ↓
+Wave-04 Production Deployment Authorization   BLOCKED BY 58B FAIL
         ↓
 Wave-04 Closeout                              BLOCKED BY DEPLOYMENT SYNCHRONIZATION
         ↓
@@ -829,11 +843,22 @@ This section is permanent project memory. Future AI Agents reading the roadmap s
 | **Wave-04 Implementation** | COMPLETE (51) |
 | **Wave-04 Verification** | PASS WITH OBSERVATIONS (52) |
 | **Wave-04 Acceptance** | ACCEPTED WITH OBSERVATIONS (53) |
-| **Wave-04 Closeout** | NOT STARTED |
+| **Wave-04 Deployment Synchronization Authorization** | COMPLETE (55) |
+| **Wave-04 Pre-Deployment Readiness Review** | COMPLETE (56) |
+| **Wave-04 Staging Deployment Synchronization** | COMPLETE (57) |
+| **Wave-04 Staging Deployment Validation** | COMPLETE (58) |
+| **Enterprise Browser Runtime Validation** | COMPLETE (58B) — FAIL |
+| **58B0 Staging Runtime Configuration Investigation** | COMPLETE |
+| **58B1 Preview Environment Remediation Authorization** | COMPLETE |
+| **58B2 Preview Environment Remediation** | READY TO START |
+| **58B Re-run** | PENDING ENVIRONMENT REMEDIATION |
+| **Wave-04 Production Deployment Authorization** | BLOCKED BY 58B FAIL |
+| **Wave-04 Production Deployment Synchronization** | NOT AUTHORIZED |
+| **Wave-04 Closeout** | BLOCKED BY DEPLOYMENT SYNCHRONIZATION |
 | **Program Certification** | NOT STARTED |
-| **Overall Program Status** | WAVE-04 ACCEPTANCE ACCEPTED WITH OBSERVATIONS — READY FOR CLOSEOUT |
+| **Overall Program Status** | READY FOR PREVIEW ENVIRONMENT REMEDIATION |
 
-(Updated by `53_ADMIN_DASHBOARD_WAVE-04_ACCEPTANCE_REVIEW.md`, 2026-07-22)
+(Updated by `58B1_PREVIEW_ENVIRONMENT_REMEDIATION_AUTHORIZATION.md` and `58B1A_PREVIEW_ENVIRONMENT_REMEDIATION_AUTHORIZATION_REPORT.md`, 2026-07-22)
 
 The four Program Owner decisions are resolved in `13_ADMIN_DASHBOARD_PROGRAM_OWNER_DECISION_RECORD.md`:
 
@@ -858,8 +883,18 @@ These decisions are now consumed by the Wave-04 authorization. No decision has b
 | **Implementation** | **COMPLETE (51)** |
 | **Verification** | **PASS WITH OBSERVATIONS (52)** |
 | **Acceptance** | **ACCEPTED WITH OBSERVATIONS (53)** |
+| **Pre-Deployment Readiness Review** | **COMPLETE (56)** |
+| **Staging Deployment Synchronization** | **COMPLETE (57)** |
+| **Staging Deployment Validation** | **COMPLETE (58)** |
+| **Enterprise Browser Runtime Validation** | **FAIL (58B)** |
+| **58B0 Staging Runtime Configuration Investigation** | **COMPLETE** |
+| **58B1 Preview Environment Remediation Authorization** | **COMPLETE** |
+| **58B2 Preview Environment Remediation** | **READY TO START** |
+| **58B Re-run** | **PENDING ENVIRONMENT REMEDIATION** |
+| **Production Deployment Authorization** | **BLOCKED BY 58B FAIL** |
+| **Closeout** | **BLOCKED BY DEPLOYMENT SYNCHRONIZATION** |
 
-This master plan is the strategic remediation blueprint for Phase B. Wave-04 is authorized with observations. Wave-04 Engineering Kickoff, Implementation Readiness Review, Implementation, Verification, and Acceptance are complete. Wave-04 Closeout may begin only after formal Program Owner authorization.
+This master plan is the strategic remediation blueprint for Phase B. Wave-04 is authorized with observations. Wave-04 Engineering Kickoff, Implementation Readiness Review, Implementation, Verification, Acceptance, Staging Deployment Synchronization, and Staging Deployment Validation are complete. Wave-04 Deployment Synchronization Authorization is COMPLETE (55). Wave-04 Pre-Deployment Readiness Review is COMPLETE (56). Wave-04 Staging Deployment Synchronization is COMPLETE (57) and the Stage 1 report (57A) is approved. Wave-04 Staging Deployment Validation is COMPLETE (58) and the Stage 2 report (58A) is approved. Enterprise Browser Runtime Validation (58B) is COMPLETE with a FAIL result. Stage `58B0` verified the root cause, and Stage `58B1` authorized the Preview Environment Remediation. `58B2` is READY TO START and must be followed by a passing `58B` re-run before Production Deployment Authorization can be reconsidered. Production Deployment Authorization remains BLOCKED BY 58B FAIL. Stage 2 (Production Deployment Synchronization) is NOT AUTHORIZED. Wave-04 Closeout is BLOCKED BY DEPLOYMENT SYNCHRONIZATION and may not begin until production deployment is separately authorized and completed.
 
 ------------------------------------------------------------------------
 
@@ -877,4 +912,4 @@ This Remediation Master Plan has been prepared by the Enterprise Program Managem
 | Program Owner | User (Program Owner) | Acknowledgment pending |
 | Principal Software Architect | ChatGPT (Methodology Guardian) | Review pending |
 
-**Next governance action:** Record Program Owner Decisions 1 and 4, then proceed to the first Wave Authorization when ready.
+**Next governance action:** Stage `58B0` verified the root cause (the Vercel Preview environment variables `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are configured with production Supabase credentials), and Stage `58B1` has authorized the Preview Environment Remediation. The next step is `58B2` Preview Environment Remediation: update the Preview variables to the authorized staging values, redeploy the Preview from commit `ce87b9d7`, re-execute Stage `58B` Enterprise Browser Runtime Validation, and obtain a PASS result before Wave-04 Production Deployment Authorization can be reconsidered. Do not begin Wave-04 Production Deployment Synchronization or Wave-04 Closeout until production deployment is separately authorized and completed.

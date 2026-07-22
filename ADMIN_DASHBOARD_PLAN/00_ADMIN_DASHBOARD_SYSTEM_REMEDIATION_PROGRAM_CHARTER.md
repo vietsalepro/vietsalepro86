@@ -372,17 +372,27 @@ Wave-04 Repository Readiness Remediation : COMPLETE
 Wave-04 Implementation Readiness Review  : COMPLETE (50)
 Wave-04 Implementation                   : COMPLETE (51)
 Wave-04 Verification                     : PASS WITH OBSERVATIONS (52)
-Wave-04 Acceptance                       : COMPLETE
-Wave-04 Deployment Synchronization       : READY TO START
-Wave-04 Closeout                         : BLOCKED BY DEPLOYMENT SYNCHRONIZATION
+Wave-04 Acceptance                                  : COMPLETE
+Wave-04 Deployment Synchronization Authorization      : COMPLETE (55)
+Wave-04 Pre-Deployment Readiness Review               : COMPLETE (56)
+Wave-04 Staging Deployment Synchronization            : COMPLETE (57)
+Wave-04 Staging Deployment Validation                 : COMPLETE (58)
+Enterprise Browser Runtime Validation                 : COMPLETE (58B) — FAIL
+58B0 Staging Runtime Configuration Investigation      : COMPLETE
+58B1 Preview Environment Remediation Authorization    : COMPLETE
+58B2 Preview Environment Remediation                  : READY TO START
+58B Re-run                                            : PENDING ENVIRONMENT REMEDIATION
+Wave-04 Production Deployment Authorization            : BLOCKED BY 58B FAIL
+Wave-04 Production Deployment Synchronization         : NOT AUTHORIZED
+Wave-04 Closeout                                    : BLOCKED BY DEPLOYMENT SYNCHRONIZATION
 Wave-01 Progress                         : COMPLETE
   Package-01                             : COMPLETE
   Package-02                             : COMPLETE
   Package-03                             : COMPLETE
   Wave-01 Implementation                 : COMPLETE
-Overall Completion                       : Wave-04 Acceptance COMPLETE; Wave-04 Deployment Synchronization READY TO START
-Program Status                           : READY FOR WAVE-04 DEPLOYMENT SYNCHRONIZATION
-(Updated by 54_PRE_WAVE04_DEPLOYMENT_SYNCHRONIZATION_ROADMAP_UPDATE.md, 2026-07-22)
+Overall Completion                                  : Wave-04 Staging Deployment Validation COMPLETE (58); Enterprise Browser Runtime Validation COMPLETE (58B) — FAIL; 58B0 Staging Runtime Configuration Investigation COMPLETE; 58B1 Preview Environment Remediation Authorization COMPLETE; 58B2 Preview Environment Remediation READY TO START; Wave-04 Production Deployment Authorization BLOCKED BY 58B FAIL; 58B Re-run PENDING ENVIRONMENT REMEDIATION
+Program Status                                      : READY FOR PREVIEW ENVIRONMENT REMEDIATION
+(Updated by 58B1_PREVIEW_ENVIRONMENT_REMEDIATION_AUTHORIZATION.md and 58B1A_PREVIEW_ENVIRONMENT_REMEDIATION_AUTHORIZATION_REPORT.md, 2026-07-22)
 ```
 
 Wave-03 established the Repository Hygiene governance model.
