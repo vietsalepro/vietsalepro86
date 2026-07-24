@@ -80,6 +80,20 @@ supabase projects restore --project-ref rsialbfjswnrkzcxarnj --target-time "2026
 - [ ] Health-check endpoint PASS.
 - [ ] Critical admin flows smoke tested.
 
+## Scenario: Tenant Deletion Failure with Partial Data Loss (Wave-02)
+
+**When to use**: `delete-tenant` returns HTTP 500 after some cleanup steps have already run (storage/orphan cleanup precede the `tenants` DELETE and are not transactional).
+
+> **Current state**: the audit-FK root cause is fixed and deployed; this scenario is now low-probability. The `delete_state` / `outbox` / `tenant_deletion_backups` tables described in earlier Wave-02 drafts are **deferred and not present in production** — do not rely on them. See `ADMIN_DASHBOARD_PLAN_FIX_SPB/WAVE-02_RECONCILIATION_REPORT.md`.
+
+**Recovery steps**
+1. Identify `tenant_id` (and `x-correlation-id` if present) from edge-function logs.
+2. Determine whether the `tenants` row still exists (see `ROLLBACK_RUNBOOK.md` assessment query).
+3. If it exists: re-run the hard delete after fixing the cause (idempotent cleanup).
+4. If it is gone but storage/auth cleanup is incomplete: manually remove residual `tenant-assets/<tenant_id>/` objects and orphaned `auth.users`.
+5. If a full tenant restore is required: use Supabase **PITR / project backup** (no per-tenant snapshot table exists today) with Production Owner sign-off.
+6. Verify: no orphaned storage objects, no orphaned auth users, `admin-health-check` 200.
+
 ## Annual DR Drill
 
 - Thực hiện drill restore lên staging environment mỗi 6 tháng.

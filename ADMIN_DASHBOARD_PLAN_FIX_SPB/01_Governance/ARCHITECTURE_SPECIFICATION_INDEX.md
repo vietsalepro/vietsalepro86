@@ -158,13 +158,14 @@ Each Specification entry records the fields mandated by Specification Program Se
 | **Specification ID** | SPEC-001 |
 | **Name** | Delete Framework Architecture Specification |
 | **Classification** | Core |
-| **Status** | Planned |
-| **Owner** | Chief Technical Advisor (to assign Specification Owner at Registered) |
+| **Status** | Baselined |
+| **Owner** | Chief Technical Advisor |
 | **Priority** | P1 — Critical |
-| **Current Phase** | Not yet initiated |
+| **Current Phase** | Baselined |
 | **Dependencies** | Mandatory: SPEC-002 (Audit Architecture), SPEC-003 (Transaction Architecture), SPEC-005 (Foreign Key Governance) |
 | **Target Folder** | `02_Specifications/` |
-| **Version** | — (not yet drafted) |
+| **Version** | 1.1 |
+| **Baseline Date** | 2026-07-24 |
 | **Short Description** | Canonical, reusable deletion pipeline for all in-scope domains; defines deletion lifecycle states, modes, and the single database-owned delete boundary. |
 
 #### SPEC-002 — Audit Architecture
@@ -174,7 +175,8 @@ Each Specification entry records the fields mandated by Specification Program Se
 | **Specification ID** | SPEC-002 |
 | **Name** | Audit Architecture Specification |
 | **Classification** | Core |
-| **Status** | Planned |
+| **Status** | Baselined |
+| **Baseline Date** | 2026-07-24 |
 | **Owner** | Chief Technical Advisor (to assign at Registered) |
 | **Priority** | P1 — Critical |
 | **Current Phase** | Not yet initiated |
@@ -190,13 +192,14 @@ Each Specification entry records the fields mandated by Specification Program Se
 | **Specification ID** | SPEC-003 |
 | **Name** | Transaction Architecture Specification |
 | **Classification** | Core |
-| **Status** | Planned |
-| **Owner** | Chief Technical Advisor (to assign at Registered) |
+| **Status** | Baselined |
+| **Owner** | Chief Technical Advisor |
 | **Priority** | P1 — Critical |
-| **Current Phase** | Not yet initiated |
+| **Current Phase** | Baselined |
 | **Dependencies** | Mandatory: none (Master Program). |
 | **Target Folder** | `02_Specifications/` |
-| **Version** | — (not yet drafted) |
+| **Version** | 1.0 |
+| **Baseline Date** | 2026-07-24 |
 | **Short Description** | Canonical transaction ownership model for deletions; atomicity, rollback, and idempotent/compensatable side-effect handling outside the critical transaction. |
 
 #### SPEC-004 — Trigger Governance
@@ -206,13 +209,14 @@ Each Specification entry records the fields mandated by Specification Program Se
 | **Specification ID** | SPEC-004 |
 | **Name** | Trigger Governance Architecture Specification |
 | **Classification** | Core |
-| **Status** | Planned |
-| **Owner** | Chief Technical Advisor (to assign at Registered) |
+| **Status** | Baselined |
+| **Owner** | Chief Technical Advisor |
 | **Priority** | P2 — Major |
-| **Current Phase** | Not yet initiated |
+| **Current Phase** | Baselined |
 | **Dependencies** | Mandatory: SPEC-001 (Delete Framework). |
 | **Target Folder** | `02_Specifications/` |
-| **Version** | — (not yet drafted) |
+| **Version** | 1.0 |
+| **Baseline Date** | 2026-07-24 |
 | **Short Description** | Trigger classification, minimization, and removal of business-workflow logic from triggers; restricts triggers to low-level invariant guardrails. |
 
 #### SPEC-005 — Foreign Key Governance
@@ -222,13 +226,14 @@ Each Specification entry records the fields mandated by Specification Program Se
 | **Specification ID** | SPEC-005 |
 | **Name** | Foreign Key Governance Architecture Specification |
 | **Classification** | Core |
-| **Status** | Planned |
-| **Owner** | Chief Technical Advisor (to assign at Registered) |
+| **Status** | Baselined |
+| **Owner** | Chief Technical Advisor |
 | **Priority** | P1 — Critical |
-| **Current Phase** | Not yet initiated |
+| **Current Phase** | Baselined |
 | **Dependencies** | Mandatory: none (Master Program). |
 | **Target Folder** | `02_Specifications/` |
-| **Version** | — (not yet drafted) |
+| **Version** | 1.0 |
+| **Baseline Date** | 2026-07-24 |
 | **Short Description** | Explicit, reviewed `ON DELETE` contract for every foreign key; risk register and per-table policy preventing cascade surprises and undeletable subgraphs. |
 
 #### SPEC-006 — Observability
@@ -238,13 +243,14 @@ Each Specification entry records the fields mandated by Specification Program Se
 | **Specification ID** | SPEC-006 |
 | **Name** | Observability Architecture Specification |
 | **Classification** | Operational |
-| **Status** | Planned |
-| **Owner** | Chief Technical Advisor (to assign at Registered) |
+| **Status** | Baselined |
+| **Owner** | Chief Technical Advisor |
 | **Priority** | P2 — Major |
-| **Current Phase** | Not yet initiated |
+| **Current Phase** | Baselined |
 | **Dependencies** | Mandatory: SPEC-001 (Delete Framework). Optional: SPEC-002 (Audit Architecture). |
 | **Target Folder** | `02_Specifications/` |
-| **Version** | — (not yet drafted) |
+| **Version** | 1.1 |
+| **Baseline Date** | 2026-07-24 |
 | **Short Description** | Delete-lifecycle observability: correlation IDs, step-level tracking, structured errors, metrics, traces, logs, alerts, and dashboards tied to the failure model. |
 
 #### SPEC-007 — Regression & Verification
@@ -254,26 +260,27 @@ Each Specification entry records the fields mandated by Specification Program Se
 | **Specification ID** | SPEC-007 |
 | **Name** | Regression & Verification Architecture Specification |
 | **Classification** | Reference |
-| **Status** | Planned |
-| **Owner** | Chief Technical Advisor (to assign at Registered) |
+| **Status** | Baselined |
+| **Owner** | Chief Technical Advisor |
 | **Priority** | P2 — Major |
-| **Current Phase** | Not yet initiated |
+| **Current Phase** | Baselined |
 | **Dependencies** | Mandatory: SPEC-001 (Delete Framework). Optional: SPEC-002, SPEC-003, SPEC-004, SPEC-005, SPEC-006. |
 | **Target Folder** | `02_Specifications/` |
-| **Version** | — (not yet drafted) |
+| **Version** | 1.0 |
+| **Baseline Date** | 2026-07-24 |
 | **Short Description** | Mandatory regression coverage model for every delete path: integration, database, trigger, transaction, edge-function, real-database, and failure-recovery tests. |
 
 ### 5.3 Catalog Summary Table
 
 | ID | Name | Classification | Status | Priority |
 |----|-------|----------------|--------|----------|
-| SPEC-001 | Delete Framework | Core | Planned | P1 |
+| SPEC-001 | Delete Framework | Core | Baselined | P1 |
 | SPEC-002 | Audit Architecture | Core | Planned | P1 |
-| SPEC-003 | Transaction Architecture | Core | Planned | P1 |
-| SPEC-004 | Trigger Governance | Core | Planned | P2 |
-| SPEC-005 | Foreign Key Governance | Core | Planned | P1 |
-| SPEC-006 | Observability | Operational | Planned | P2 |
-| SPEC-007 | Regression & Verification | Reference | Planned | P2 |
+| SPEC-003 | Transaction Architecture | Core | Baselined | P1 |
+| SPEC-004 | Trigger Governance | Core | Baselined | P2 |
+| SPEC-005 | Foreign Key Governance | Core | Baselined | P1 |
+| SPEC-006 | Observability | Operational | Baselined | P2 |
+| SPEC-007 | Regression & Verification | Reference | Baselined | P2 |
 
 ---
 
@@ -369,13 +376,13 @@ The Index exposes the Document Status (Specification Program Section 32) of ever
 
 | ID | Status | Owner | Last Review | Next Review |
 |----|--------|-------|-------------|-------------|
-| SPEC-001 | Planned | Chief Technical Advisor | — | At Registered |
-| SPEC-002 | Planned | Chief Technical Advisor | — | At Registered |
-| SPEC-003 | Planned | Chief Technical Advisor | — | At Registered |
-| SPEC-004 | Planned | Chief Technical Advisor | — | At Registered |
-| SPEC-005 | Planned | Chief Technical Advisor | — | At Registered |
-| SPEC-006 | Planned | Chief Technical Advisor | — | At Registered |
-| SPEC-007 | Planned | Chief Technical Advisor | — | At Registered |
+| SPEC-001 | Baselined | Chief Technical Advisor | 2026-07-24 | At Implementation Plan |
+| SPEC-002 | Baselined | Chief Technical Advisor | 2026-07-24 | At Implementation Plan |
+| SPEC-003 | Baselined | Chief Technical Advisor | 2026-07-24 | At Implementation Plan |
+| SPEC-004 | Baselined | Chief Technical Advisor | 2026-07-24 | At Implementation Plan |
+| SPEC-005 | Baselined | Chief Technical Advisor | 2026-07-24 | At Implementation Plan |
+| SPEC-006 | Baselined | Chief Technical Advisor | 2026-07-24 | At Implementation Plan |
+| SPEC-007 | Baselined | Chief Technical Advisor | 2026-07-24 | At Implementation Plan |
 
 The dashboard **shall** be refreshed at every status transition, every baseline, and every Program review (Specification Program Section 36.7).
 
@@ -593,7 +600,8 @@ This document is the Architecture Specification Index for the Deletion & Audit A
 - **Migration:** 0
 - **Platform:** 0
 - **Governance:** this Index (not numbered in the SPEC-NNN domain series; reserved range SPEC-900–SPEC-999 available if a governance document requires a domain ID).
-- **All Specifications in Planned status** at Index v1.0.
+- **Baselined:** 7 (SPEC-001, SPEC-002, SPEC-003, SPEC-004, SPEC-005, SPEC-006, SPEC-007)
+- **Planned:** 0
 
 ### 15.3 Repository Diagram
 

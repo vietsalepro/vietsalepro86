@@ -4,7 +4,18 @@ import { checkIsSystemAdmin, checkIsTenantOwner } from '../_shared/permissions.t
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-correlation-id',
+};
+
+// SPEC-006 observability: a correlation id lets a single delete be traced across
+// edge logs, audit rows, and the client. Reuse an incoming id (idempotent retries)
+// or mint one. ponytail: no schema change — the id rides in logs, the response,
+// and app_audit_log.new_data.
+const resolveCorrelationId = (req: Request, body: Record<string, unknown>): string => {
+  const fromHeader = req.headers.get('x-correlation-id');
+  const fromBody = (body?.correlation_id ?? body?.correlationId) as string | undefined;
+  const candidate = (fromHeader || fromBody || '').toString().trim();
+  return candidate && UUID_REGEX.test(candidate) ? candidate : crypto.randomUUID();
 };
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -28,7 +39,7 @@ const jsonResponse = (data: unknown, status: number) =>
     headers: { 'Content-Type': 'application/json', ...corsHeaders },
   });
 
-async function softDeleteTenant(supabaseAdmin: any, tenantId: string, userId: string, ip: string) {
+async function softDeleteTenant(supabaseAdmin: any, tenantId: string, userId: string, ip: string, correlationId: string) {
   const now = new Date().toISOString();
 
   // 1. Set tenant status to 'archived' + archived_at
@@ -57,17 +68,17 @@ async function softDeleteTenant(supabaseAdmin: any, tenantId: string, userId: st
     table_name: 'tenants',
     record_id: tenantId,
     action: 'UPDATE',
-    new_data: { status: 'archived', archived_at: now },
+    new_data: { status: 'archived', archived_at: now, correlation_id: correlationId },
     ip_address: ip,
   });
   if (auditError) {
-    console.error('Failed to write soft-delete audit log', auditError);
+    console.error(`[delete-tenant][${correlationId}] Failed to write soft-delete audit log`, auditError);
   }
 
-  return { success: true, action: 'soft_delete', tenantId };
+  return { success: true, action: 'soft_delete', tenantId, correlationId };
 }
 
-async function hardDeleteTenant(supabaseAdmin: any, tenantId: string, userId: string, ip: string) {
+async function hardDeleteTenant(supabaseAdmin: any, tenantId: string, userId: string, ip: string, correlationId: string) {
   // Original hard-delete logic
   const { data: tenant, error: tenantError } = await supabaseAdmin
     .from('tenants')
@@ -192,12 +203,20 @@ async function hardDeleteTenant(supabaseAdmin: any, tenantId: string, userId: st
     table_name: 'tenants',
     record_id: tenantId,
     action: 'DELETE',
-    new_data: { hard_deleted: true, storageDeleted, authDeleted },
+    new_data: { hard_deleted: true, storageDeleted, authDeleted, correlation_id: correlationId },
     ip_address: ip,
   });
   if (auditError) {
-    console.error('Failed to write hard-delete audit log', auditError);
+    console.error(`[delete-tenant][${correlationId}] Failed to write hard-delete audit log`, auditError);
   }
+
+  console.log(`[delete-tenant][${correlationId}] hard delete complete`, {
+    tenantId,
+    storageDeleted,
+    storageFailures,
+    authDeleted,
+    authFailures,
+  });
 
   return jsonResponse(
     {
@@ -208,6 +227,7 @@ async function hardDeleteTenant(supabaseAdmin: any, tenantId: string, userId: st
       storageFailures,
       authDeleted,
       authFailures,
+      correlationId,
     },
     200
   );
@@ -262,6 +282,7 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
+    const correlationId = resolveCorrelationId(req, body);
     const tenantId = (body.tenant_id ?? body.tenantId)?.toString().trim();
     const force = body.force === true;
 
@@ -291,12 +312,36 @@ serve(async (req) => {
       return jsonResponse({ error: 'Không được xóa tenant admin' }, 403);
     }
 
+    console.log(`[delete-tenant][${correlationId}] start`, { tenantId, force, actor: user.id });
+
     if (force) {
-      // Hard-delete: requires explicit force flag
-      return await hardDeleteTenant(supabaseAdmin, tenantId, user.id, ip);
+      if (Deno.env.get('USE_CANONICAL_DELETE') === 'true') {
+        console.log(`[delete-tenant][${correlationId}] canonical path enabled`);
+        const requestId = crypto.randomUUID();
+        const { data: result, error: rpcError } = await supabaseAdmin.rpc('delete_tenant_canonical', {
+          p_tenant_id: tenantId,
+          p_request_id: requestId,
+          p_actor_id: user.id,
+          p_correlation_id: correlationId,
+        });
+        if (rpcError) throw rpcError;
+        const status = result?.success
+          ? 200
+          : result?.error === 'tenant_not_found'
+          ? 404
+          : result?.error === 'reserved_admin_subdomain'
+          ? 403
+          : 400;
+        console.log(`[delete-tenant][${correlationId}] canonical result`, result);
+        return jsonResponse(result, status);
+      }
+
+      // Legacy hard-delete path (default when feature flag is off)
+      console.log(`[delete-tenant][${correlationId}] legacy path`);
+      return await hardDeleteTenant(supabaseAdmin, tenantId, user.id, ip, correlationId);
     } else {
       // Default: soft-delete (archive)
-      return jsonResponse(await softDeleteTenant(supabaseAdmin, tenantId, user.id, ip), 200);
+      return jsonResponse(await softDeleteTenant(supabaseAdmin, tenantId, user.id, ip, correlationId), 200);
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';

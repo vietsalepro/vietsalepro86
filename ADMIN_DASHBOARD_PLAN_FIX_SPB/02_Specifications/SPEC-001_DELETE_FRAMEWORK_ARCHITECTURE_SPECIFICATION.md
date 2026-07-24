@@ -6,13 +6,15 @@
 **Short Identifier:** DeleteFramework  
 **Specification ID:** SPEC-001  
 **Classification:** Core  
-**Status:** Draft  
+**Status:** Baselined  
 **Version:** 1.1  
-**Effective Date:** 2026-07-23  
+**Effective Date:** 2026-07-24  
 **Author:** Engineering Execution Agent  
 **Technical Custodian:** Chief Technical Advisor (Architecture Governance)  
 **Final Owner:** Production Owner  
 **Approvers:** Chief Technical Advisor, Production Owner  
+**Baseline Approved By:** Chief Technical Advisor (delegated by Production Owner)  
+**Baseline Date:** 2026-07-24  
 **Master Program Reference:** Deletion & Audit Architecture Remediation Program v1.0  
 **Related Specifications:** SPEC-002 Audit Architecture, SPEC-003 Transaction Architecture, SPEC-005 Foreign Key Governance  
 **Related ADRs:** None recorded.  
@@ -32,13 +34,15 @@ This specification is the authoritative architecture definition for the **Delete
 | Name | Delete Framework Architecture Specification |
 | Short Identifier | DeleteFramework |
 | Classification | Core |
-| Status | Draft |
+| Status | Baselined |
 | Version | 1.1 |
-| Effective Date | 2026-07-23 |
+| Effective Date | 2026-07-24 |
 | Author | Engineering Execution Agent |
 | Technical Custodian | Chief Technical Advisor (Architecture Governance) |
 | Final Owner | Production Owner |
 | Approvers | Chief Technical Advisor, Production Owner |
+| Baseline Approved By | Chief Technical Advisor (delegated by Production Owner) |
+| Baseline Date | 2026-07-24 |
 | Master Program | Deletion & Audit Architecture Remediation Program v1.0 |
 | Related Specifications | SPEC-002, SPEC-003, SPEC-005 (mandatory) |
 | Related ADRs | None recorded |

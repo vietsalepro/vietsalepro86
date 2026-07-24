@@ -88,3 +88,42 @@ ALTER TABLE public.tenants DROP COLUMN IF EXISTS <column_name>;
 ```
 
 Always wrap destructive changes in `IF EXISTS`.
+
+## Tenant Deletion Administration (Wave-02)
+
+> **State of the world (verified 2026-07-24)**: The historical `delete-tenant` HTTP 500 is **fixed in production and staging**. `audit_log_trigger()` sets `tenant_id := NULL` on `tenants` DELETE (migration `20260715000011_fix_audit_log_trigger_tenant_delete.sql`), so the `audit_log_tenant_id_fkey` FK is no longer violated. The FK and `trg_audit_log_tenants` are intentionally retained. See `ADMIN_DASHBOARD_PLAN_FIX_SPB/WAVE-02_RECONCILIATION_REPORT.md`.
+
+### Assess a failed hard delete
+
+```sql
+-- Does the tenant row still exist?
+SELECT id, name, status, created_at FROM public.tenants WHERE id = '<tenant_id>';
+
+-- Orphaned tenant-scoped rows?
+SELECT 'app_audit_log' AS source, COUNT(*) FROM public.app_audit_log WHERE tenant_id = '<tenant_id>'
+UNION ALL SELECT 'terms_acceptance', COUNT(*) FROM public.terms_acceptance WHERE tenant_id = '<tenant_id>'
+UNION ALL SELECT 'tenant_memberships', COUNT(*) FROM public.tenant_memberships WHERE tenant_id = '<tenant_id>'
+UNION ALL SELECT 'tenant_subscriptions', COUNT(*) FROM public.tenant_subscriptions WHERE tenant_id = '<tenant_id>';
+
+-- Recent audit trail for the deletion (tenant_id is NULL by design on DELETE; match on entity_id):
+SELECT action, entity_type, entity_id, actor_id, created_at
+FROM public.audit_log WHERE entity_type = 'tenants' AND entity_id = '<tenant_id>' ORDER BY created_at DESC;
+```
+
+### Recovery paths
+
+- **Tenant row still exists, side effects incomplete**: the DB transaction did not commit the delete — re-run the hard delete via the `delete-tenant` edge function (`{ "tenant_id": "<id>", "force": true }`) after confirming the failure cause. The edge function is idempotent for storage/auth cleanup (skips already-removed objects).
+- **Tenant row deleted, storage/auth cleanup failed**: the edge function logs `storageFailures` / `authFailures` in its 200 response. Re-drive cleanup by listing `tenant-assets/<tenant_id>/` and removing residual objects, and delete orphaned `auth.users` that have no remaining membership/ownership.
+- **Restore a deleted tenant**: high-risk; there is **no** automated pre-delete snapshot table in production today (`tenant_deletion_backups` is a deferred Wave-02 item — see reconciliation report §6). Restore only from a Supabase PITR / project backup, coordinated with the Production Owner.
+
+### Common failure mode reference
+
+`audit_log_tenant_id_fkey` violation on tenant DELETE — **should no longer occur**. If it reappears, verify the deployed `audit_log_trigger()` still contains the `TG_OP = 'DELETE' → v_tenant_id := NULL` branch and re-apply `20260715000011` if a later migration regressed it.
+
+### Post-recovery verification
+
+- [ ] `public.tenants` state matches intent (deleted or restored).
+- [ ] `tenant-assets/<tenant_id>/` empty or expected objects preserved.
+- [ ] Orphaned `auth.users` removed/restored.
+- [ ] `admin-health-check` returns `200 OK`.
+- [ ] `npm run audit:rpc` passes.

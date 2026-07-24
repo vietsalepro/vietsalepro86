@@ -6,13 +6,15 @@
 **Short Identifier:** TriggerGovernance  
 **Specification ID:** SPEC-004  
 **Classification:** Core  
-**Status:** Draft  
+**Status:** Baselined  
 **Version:** 1.0  
-**Effective Date:** 2026-07-23  
+**Effective Date:** 2026-07-24  
 **Author:** Engineering Execution Agent  
 **Technical Custodian:** Chief Technical Advisor (Architecture Governance)  
 **Final Owner:** Production Owner  
 **Approvers:** Chief Technical Advisor, Production Owner  
+**Baseline Approved By:** Chief Technical Advisor (delegated by Production Owner)  
+**Baseline Date:** 2026-07-24  
 **Master Program Reference:** Deletion & Audit Architecture Remediation Program v1.0  
 **Related Specifications:** SPEC-001 Delete Framework (mandatory), SPEC-002 Audit Architecture (optional), SPEC-003 Transaction Architecture (optional), SPEC-005 Foreign Key Governance (optional)  
 **Related ADRs:** None recorded.  
@@ -32,13 +34,15 @@ This specification is the authoritative architecture definition for **Trigger Go
 | Name | Trigger Governance Architecture Specification |
 | Short Identifier | TriggerGovernance |
 | Classification | Core |
-| Status | Draft |
+| Status | Baselined |
 | Version | 1.0 |
-| Effective Date | 2026-07-23 |
+| Effective Date | 2026-07-24 |
 | Author | Engineering Execution Agent |
 | Technical Custodian | Chief Technical Advisor (Architecture Governance) |
 | Final Owner | Production Owner |
 | Approvers | Chief Technical Advisor, Production Owner |
+| Baseline Approved By | Chief Technical Advisor (delegated by Production Owner) |
+| Baseline Date | 2026-07-24 |
 | Master Program | Deletion & Audit Architecture Remediation Program v1.0 |
 | Related Specifications | SPEC-001 Delete Framework (mandatory), SPEC-002 Audit Architecture (optional), SPEC-003 Transaction Architecture (optional), SPEC-005 Foreign Key Governance (optional) |
 | Related ADRs | None recorded |

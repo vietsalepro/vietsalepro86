@@ -76,3 +76,21 @@ Affected: <tenants/users>
 Status: Investigating / Identified / Monitoring / Resolved
 Next update: <time>
 ```
+
+## Tenant Deletion Failure (Wave-02)
+
+> The known `delete-tenant` HTTP 500 root cause (audit FK violation on tenant DELETE) is **fixed and deployed** (see `ROLLBACK_RUNBOOK.md` → Tenant Deletion Administration and `ADMIN_DASHBOARD_PLAN_FIX_SPB/WAVE-02_RECONCILIATION_REPORT.md`). Use this playbook only if deletion failures recur.
+
+**Severity**: SEV-1 if hard delete fails across multiple requests or partial deletions cause data inconsistency; otherwise SEV-3.
+
+**Immediate containment**
+1. Confirm scope: pull failing tenant IDs from edge logs (`get_logs service='edge-function'`, look for `POST | 500 | .../delete-tenant`) and Postgres logs (`service='postgres'`).
+2. If a regression re-introduced the audit FK error, temporarily disable the hard-delete UI path (feature flag) while investigating.
+
+**Investigation checklist**
+- [ ] Deployed `audit_log_trigger()` still has the `DELETE → NULL` branch (root-cause guard intact).
+- [ ] `app.hard_delete_tenant` flag set by `trg_tenants_before_delete` (needed so the membership guardrail allows cascade).
+- [ ] Count of `audit_log_tenant_id_fkey` errors in Postgres logs (should be zero).
+- [ ] Orphaned rows in `app_audit_log`, `terms_acceptance`; residual objects in `tenant-assets/<tenant_id>/`.
+
+**Resolution**: follow `ROLLBACK_RUNBOOK.md` → Tenant Deletion Administration.

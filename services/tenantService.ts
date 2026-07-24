@@ -729,11 +729,38 @@ export async function deleteTenant(tenantId: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function hardDeleteTenant(tenantId: string): Promise<void> {
+export async function hardDeleteTenant(tenantId: string, correlationId?: string): Promise<void> {
+  // SPEC-006: propagate a correlation id so the delete can be traced across the
+  // edge function logs and audit rows. Generated client-side when not supplied.
+  const cid = correlationId ?? (globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${tenantId}`);
+
+  // SPEC-001: when the canonical delete feature flag is enabled, call the
+  // database-owned RPC directly instead of the legacy multi-step Edge Function.
+  const env = (import.meta as any).env ?? (typeof process !== 'undefined' ? process.env : {});
+  const useCanonical =
+    env?.VITE_USE_CANONICAL_DELETE === 'true' || env?.USE_CANONICAL_DELETE === 'true';
+
+  if (useCanonical) {
+    const requestId = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${tenantId}`;
+    const { data, error } = await supabase.rpc('delete_tenant_canonical', {
+      p_tenant_id: tenantId,
+      p_request_id: requestId,
+      p_actor_id: null,
+      p_correlation_id: cid,
+    });
+
+    if (error) throw error;
+    if (!data || typeof data !== 'object' || !data.success) {
+      throw new Error(data?.error || 'Xóa cửa hàng thất bại');
+    }
+    return;
+  }
+
   const { data, error } = await supabase.functions.invoke<{ success?: boolean; error?: string }>(
     'delete-tenant',
     {
-      body: { tenant_id: tenantId, force: true },
+      body: { tenant_id: tenantId, force: true, correlation_id: cid },
+      headers: { 'x-correlation-id': cid },
     }
   );
 

@@ -1045,4 +1045,81 @@ The Certification is a governance artifact. It does not authorize implementation
 
 ---
 
+## 23. SPEC-002 Baseline Certification Record
+
+**Specification:** SPEC-002 — Audit Architecture Specification, Version 1.0
+**Status:** Baselined
+**Baseline Date:** 2026-07-24
+**Baseline Approved By:** Chief Technical Advisor (delegated by Production Owner)
+**Authority Model:** Production Owner → Chief Technical Advisor → Engineering Execution Agent
+**Review Reference:** `WAVE-03_PHASE-1-1_SPEC-002_REVIEW_REPORT.md` (Phase 1.1 — Recommendation: APPROVE)
+
+This certification confirms that SPEC-002 has been reviewed in Phase 1.1 and is formally approved as a Baselined Architecture Specification for VietSalePro. It does not authorize implementation; implementation planning remains a separate activity.
+
+## 24. SPEC-003 Baseline Certification Record
+
+**Specification:** SPEC-003 — Transaction Architecture Specification, Version 1.0
+**Status:** Baselined
+**Baseline Date:** 2026-07-24
+**Baseline Approved By:** Chief Technical Advisor (delegated by Production Owner)
+**Authority Model:** Production Owner → Chief Technical Advisor → Engineering Execution Agent
+**Review Reference:** `WAVE-03_PHASE-1-3_SPEC-003_REVIEW_REPORT.md` (Phase 1.3 — Recommendation: APPROVE)
+
+This certification confirms that SPEC-003 has been reviewed in Phase 1.3 and is formally approved as a Baselined Architecture Specification for VietSalePro. It does not authorize implementation; implementation planning remains a separate activity.
+
+## 25. SPEC-005 Baseline Certification Record
+
+**Specification:** SPEC-005 — Foreign Key Governance Architecture Specification, Version 1.0
+**Status:** Baselined
+**Baseline Date:** 2026-07-24
+**Baseline Approved By:** Chief Technical Advisor (delegated by Production Owner)
+**Authority Model:** Production Owner → Chief Technical Advisor → Engineering Execution Agent
+**Review Reference:** `WAVE-03_PHASE-1-5_SPEC-005_REVIEW_REPORT.md` (Phase 1.5 — Recommendation: APPROVE)
+
+This certification confirms that SPEC-005 has been reviewed in Phase 1.5 and is formally approved as a Baselined Architecture Specification for VietSalePro. It does not authorize implementation; implementation planning remains a separate activity.
+
+## 26. SPEC-001 Baseline Certification Record
+
+**Specification:** SPEC-001 — Delete Framework Architecture Specification, Version 1.1
+**Status:** Baselined
+**Baseline Date:** 2026-07-24
+**Baseline Approved By:** Chief Technical Advisor (delegated by Production Owner)
+**Authority Model:** Production Owner → Chief Technical Advisor → Engineering Execution Agent
+**Review Reference:** `WAVE-03_PHASE-2-1_SPEC-001_REVIEW_REPORT.md` (Phase 2.1 — Recommendation: APPROVE)
+
+This certification confirms that SPEC-001 has been reviewed in Phase 2.1 and is formally approved as a Baselined Architecture Specification for VietSalePro. It does not authorize implementation; implementation planning remains a separate activity.
+
+## 27. SPEC-004 Baseline Certification Record
+
+**Specification:** SPEC-004 — Trigger Governance Architecture Specification, Version 1.0
+**Status:** Baselined
+**Baseline Date:** 2026-07-24
+**Baseline Approved By:** Chief Technical Advisor (delegated by Production Owner)
+**Authority Model:** Production Owner → Chief Technical Advisor → Engineering Execution Agent
+**Review Reference:** `WAVE-03_PHASE-3-1_SPEC-004_REVIEW_REPORT.md` (Phase 3.1 — Recommendation: APPROVE)
+
+This certification confirms that SPEC-004 has been reviewed in Phase 3.1 and is formally approved as a Baselined Architecture Specification for VietSalePro. It does not authorize implementation; implementation planning remains a separate activity.
+
+## 28. SPEC-006 Baseline Certification Record
+
+**Specification:** SPEC-006 — Observability Architecture Specification, Version 1.1
+**Status:** Baselined
+**Baseline Date:** 2026-07-24
+**Baseline Approved By:** Chief Technical Advisor (delegated by Production Owner)
+**Authority Model:** Production Owner → Chief Technical Advisor → Engineering Execution Agent
+**Review Reference:** `WAVE-03_PHASE-3-3_SPEC-006_REVIEW_REPORT.md` (Phase 3.3 — Recommendation: APPROVE WITH MINOR CHANGES)
+
+This certification confirms that SPEC-006 has been reviewed in Phase 3.3 and is formally approved as a Baselined Architecture Specification for VietSalePro. It does not authorize implementation; implementation planning remains a separate activity.
+
+## 29. SPEC-007 Baseline Certification Record
+
+**Specification:** SPEC-007 — Regression & Verification Architecture Specification, Version 1.0
+**Status:** Baselined
+**Baseline Date:** 2026-07-24
+**Baseline Approved By:** Chief Technical Advisor (delegated by Production Owner)
+**Authority Model:** Production Owner → Chief Technical Advisor → Engineering Execution Agent
+**Review Reference:** `WAVE-03_PHASE-3-5_SPEC-007_REVIEW_REPORT.md` (Phase 3.5 — Recommendation: APPROVE WITH MINOR CHANGES)
+
+This certification confirms that SPEC-007 has been reviewed in Phase 3.5 and is formally approved as a Baselined Architecture Specification for VietSalePro. It does not authorize implementation; implementation planning remains a separate activity.
+
 *End of Architecture Specification Baseline Certification*

@@ -6,13 +6,15 @@
 **Short Identifier:** TransactionArchitecture  
 **Specification ID:** SPEC-003  
 **Classification:** Core  
-**Status:** Draft  
+**Status:** Baselined  
 **Version:** 1.0  
-**Effective Date:** 2026-07-23  
+**Effective Date:** 2026-07-24  
 **Author:** Engineering Execution Agent  
 **Technical Custodian:** Chief Technical Advisor (Architecture Governance)  
 **Final Owner:** Production Owner  
 **Approvers:** Chief Technical Advisor, Production Owner  
+**Baseline Approved By:** Chief Technical Advisor (delegated by Production Owner)  
+**Baseline Date:** 2026-07-24  
 **Master Program Reference:** Deletion & Audit Architecture Remediation Program v1.0  
 **Related Specifications:** SPEC-001 Delete Framework (dependent on SPEC-003), SPEC-002 Audit Architecture (optional)  
 **Related ADRs:** None recorded.  
@@ -32,13 +34,15 @@ This specification is the authoritative architecture definition for the **Transa
 | Name | Transaction Architecture Specification |
 | Short Identifier | TransactionArchitecture |
 | Classification | Core |
-| Status | Draft |
+| Status | Baselined |
 | Version | 1.0 |
-| Effective Date | 2026-07-23 |
+| Effective Date | 2026-07-24 |
 | Author | Engineering Execution Agent |
 | Technical Custodian | Chief Technical Advisor (Architecture Governance) |
 | Final Owner | Production Owner |
 | Approvers | Chief Technical Advisor, Production Owner |
+| Baseline Approved By | Chief Technical Advisor (delegated by Production Owner) |
+| Baseline Date | 2026-07-24 |
 | Master Program | Deletion & Audit Architecture Remediation Program v1.0 |
 | Related Specifications | SPEC-001 Delete Framework (dependent on SPEC-003), SPEC-002 Audit Architecture (optional) |
 | Related ADRs | None recorded |

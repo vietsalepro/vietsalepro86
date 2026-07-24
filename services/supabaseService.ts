@@ -1292,8 +1292,8 @@ export const supabaseService = {
   },
 
   /**
-   * Legacy deleteOrder — chỉ dùng khi RPC chưa được migrate.
-   * ⚠️ KHÔNG atomic, KHÔNG hoàn kho, KHÔNG xử lý lot.
+   * @deprecated Legacy non-atomic fallback — retained for rollback safety only.
+   * KHÔNG sử dụng cho path mới; canonical path là `delete_order` RPC.
    */
   async _legacyDeleteOrder(id: string) {
     // 0. Get Order Info for Point Reversal
@@ -2546,9 +2546,8 @@ export const supabaseService = {
   },
 
   /**
-   * Legacy pushCheckout — chỉ dùng khi RPC chưa được migrate.
-   * ⚠️ KHÔNG atomic, KHÔNG validate tồn kho, KHÔNG row lock.
-   * Giữ lại để hệ thống không gãy nếu admin quên chạy migration Phase 1.
+   * @deprecated Legacy non-atomic fallback — retained for rollback safety only.
+   * KHÔNG sử dụng cho path mới; canonical path là `push_checkout` RPC.
    */
   async _legacyPushCheckout(op: CheckoutOp) {
     const { order } = op;
@@ -3131,8 +3130,8 @@ export const supabaseService = {
   },
 
   /**
-   * Legacy createReturnOrder — chỉ dùng khi RPC chưa được migrate.
-   * ⚠️ KHÔNG atomic, KHÔNG validate vượt số bán ở server.
+   * @deprecated Legacy non-atomic fallback — retained for rollback safety only.
+   * KHÔNG sử dụng cho path mới; canonical path là `create_return_order` RPC.
    */
   async _legacyCreateReturnOrder(params: {
     originalOrderId: string;

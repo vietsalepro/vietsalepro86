@@ -215,3 +215,18 @@ All promotion steps are governed by `D-034-01_Deployment_Validation_Gate_Definit
 
 > Owner/contact managed by AI Agent. Update manually when team structure changes.
 
+## Tenant Deletion Hardening (Wave-02) — Status & Gate
+
+**Delivered (production + staging):**
+- Root-cause fix for the `delete-tenant` audit-FK HTTP 500: `20260715000011_fix_audit_log_trigger_tenant_delete.sql` (`audit_log_trigger()` writes `tenant_id = NULL` on `tenants` DELETE).
+- Wave-02 audit/security packages: `20260729000000_wave02_package01_log_view_rpc.sql`, `20260730000000_wave02_package02_audit_triggers.sql`, `20260731000000_wave02_package03_security_context.sql`.
+
+**Deferred (NOT applied — require a dedicated, gated change):** `delete_tenant_canonical` RPC, `delete_state`, `outbox`, `tenant_deletion_backups`, `foreign_key_catalog`, `trigger_registry`, and dropping `audit_log_tenant_id_fkey` / `trg_audit_log_tenants`. Rationale and recommendation: `ADMIN_DASHBOARD_PLAN_FIX_SPB/WAVE-02_RECONCILIATION_REPORT.md` §6.
+
+**Gates before applying any deferred deletion-hardening migration:**
+- New migrations timestamped **after** `20260731000000` (never backdate before applied migrations).
+- SQL aligned to the real `audit_log` columns (`old_data`/`new_data`, `ip_address` — there is no `new_value`/`correlation_id` column).
+- Staging end-to-end hard delete + orphan verification pass.
+- `ROLLBACK_RUNBOOK.md` → Tenant Deletion Administration exercised at least once in staging.
+- Production Owner decision recorded on whether to retain `audit_log_tenant_id_fkey` (recommended: retain).
+

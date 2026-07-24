@@ -34,7 +34,7 @@ Business domain is Vietnamese retail: dairy/baby-goods default seed, VND currenc
 │  ┌──────────────┐  ┌──────────────┐  ┌────────────────────────┐ │
 │  │ Postgres 17  │  │ Auth (JWT)   │  │ Edge Functions (Deno)  │ │
 │  │ 70+ tables   │  │ MFA/TOTP     │  │ 29 functions + 6 shared│ │
-│  │ 100+ RPCs    │  │ Email OTP    │  │ Tenant lifecycle       │ │
+│  │ ~300 RPCs    │  │ Email OTP    │  │ Tenant lifecycle       │ │
 │  │ RLS per      │  │              │  │ Auth/Security          │ │
 │  │   tenant_id  │  │              │  │ Email/SMS/Billing      │ │
 │  │ Triggers     │  │              │  │ System Admin/Ops       │ │
@@ -63,16 +63,17 @@ Business domain is Vietnamese retail: dairy/baby-goods default seed, VND currenc
 |---|---|---|
 | Graph nodes | 28,881 | artifact.json |
 | Graph edges | 42,874 | artifact.json |
-| Migrations | 137 SQL files | supabase/migrations/ |
+| Migrations | 147 SQL files | supabase/migrations/ |
 | Edge functions | 29 (+ 6 shared helpers) | supabase/functions/ |
-| Service files | 31 root + 11 admin + 4 providers | services/ |
-| Page components | 38 tenant + 16 admin | pages/ |
+| Service files | 32 root + 11 admin + 4 providers | services/ |
+| Page components | 24 root + 17 admin | pages/ |
 | UI components | ~140 | components/ |
 | Hooks | 11 | hooks/ |
 | Contexts | 2 (Auth, Tenant) | contexts/ |
 | Types files | 7 (types.ts + types/*) | types/ + types.ts |
-| Utils | 14 | utils/ |
-| Tests | 67 files | tests/ |
+| Utils | 17 | utils/ |
+| Tests | 70 files | tests/ |
+| Business RPCs (Postgres `public` functions) | ~300 (334 counted live 2026-07-24) | supabase/migrations/ |
 | RPC contracts documented | 100+ | docs/admin-dashboard/RPC_CONTRACTS.md |
 
 **Graph queryability:** `search_graph` (BM25 + name_pattern + semantic), `query_graph` (Cypher), `trace_path` (calls/data_flow/cross_service) are all operational against the indexed project. Labels available: Function, Method, Class, Interface, Route, Variable, Module, Package, File, Folder.
@@ -102,6 +103,7 @@ Business domain is Vietnamese retail: dairy/baby-goods default seed, VND currenc
 | **Audit** | AuditLog | auditService | writeAuditLog (edge), getAuditLogs |
 | **Members** | MemberManagement | tenantService | invite_tenant_member, remove_tenant_member, update_tenant_member_role, toggle_tenant_member_active |
 | **Tax** | TaxCalculation | (client-side) | — |
+| **E-Invoice** | (Settings/Billing integration) | einvoice config + order emission | check_single_einvoice_config, update_einvoice_config_updated_at, update_einvoice_orders_updated_at |
 
 ### 3.2 Admin Platform Modules
 
@@ -240,11 +242,22 @@ Backend:
 
 **Admin/Platform (13):** system_settings, app_settings, app_audit_log, app_audit_log_partitioned, audit_log, admin_events, cron_job_logs, maintenance_windows, error_logs, rate_limit_logs, heavy_ops_jobs, processed_operations, db_maintenance_jobs
 
-**Security/Audit (7):** admin_login_history, login_attempts, admin_2fa_backup_codes, admin_2fa_backup_code_attempts, gdpr_requests, gdpr_deletion_logs, terms_acceptance
+**Security/Audit (6):** admin_login_history, login_attempts, admin_2fa_backup_codes, gdpr_requests, gdpr_deletion_logs, terms_acceptance
 
-**Other (8):** support_tickets, ticket_replies, ticket_reply_templates, announcements, notification_logs, partners, integrations, webhook_deliveries, tenant_restore_snapshots, tenant_backup_jobs, fraud_queue, email_templates
+**E-Invoice (2):** einvoice_config, einvoice_orders
 
-### 5.2 RPC Functions (100+)
+**Delete/Outbox (3):** delete_state, outbox, tenant_deletion_backups — canonical tenant deletion state machine, idempotent side-effect queue, and pre-delete JSON snapshot used for recovery.
+
+**Other (10):** support_tickets, ticket_replies, ticket_reply_templates, announcements, notification_logs, partners, integrations, webhook_deliveries, fraud_queue, email_templates
+
+> **Phantom tables (planned in migrations, NOT applied to production — verified absent live 2026-07-24):** `admin_2fa_backup_code_attempts`, `tenant_restore_snapshots`, `tenant_backup_jobs`. Do not treat these as existing schema.
+
+### 5.2 RPC Functions (~300 unique business RPCs)
+
+Live production `public`-schema function count is **334** (counted 2026-07-24); "~300 unique business RPCs" is the canonical figure (the remainder are helper/trigger functions). `docs/admin-dashboard/RPC_CONTRACTS.md` documents 100+ of these as canonical contracts. E-invoice RPCs include `check_single_einvoice_config`, `update_einvoice_config_updated_at`, `update_einvoice_orders_updated_at`.
+
+**Delete Framework RPCs** (Wave-03):
+- `delete_tenant_canonical(p_tenant_id, p_request_id, p_actor_id, p_correlation_id)` — SECURITY DEFINER, single transaction owner for hard-delete: backup snapshot, audit intent, tenant row deletion, and outbox enqueue.
 
 Grouped by domain — see §3 for service→RPC mapping and `docs/admin-dashboard/RPC_CONTRACTS.md` for the canonical contract table. Notable patterns:
 - **SECURITY DEFINER** for privileged ops (tenant create/delete, user management, billing, GDPR)
@@ -269,13 +282,14 @@ CREATE POLICY ON system_admins FOR ALL TO authenticated
 - **Tenant limits**: trg_check_tenant_user_limit, trg_check_tenant_product_limit, trg_check_tenant_order_limit
 - **Business**: trg_orders_set_order_code (auto order_code from id)
 - **updated_at**: standard maintenance triggers
+- **Wave-03 trigger migration**: business-workflow audit triggers on tenants, tenant_memberships, orders, products, import_receipts, disposals, app_settings, tenant_subscriptions, system_admins, invitations, and licenses are **disabled** by migration `20260725000003_trigger_migration.sql` so the canonical delete RPC owns audit writes. Guardrail triggers remain enabled.
 
 ### 5.5 Enums/Types
 - `tenant_role` enum: owner, admin, member, viewer
 - `invitation_status` enum: pending, accepted, expired, revoked
 - Check constraints: tenants.status, tenants.isolation_mode, tenants.plan, payments.payment_method/status, invoices.status, disposals.status, announcements.status/target_type, app_audit_log.action, billing_job_logs.status, heavy_ops_jobs.status, admin_login_history.status, admin_roles.permissions
 
-### 5.6 Migration Evolution (137 migrations, 2025-07 to 2026-08)
+### 5.6 Migration Evolution (147 migrations, 2025-07 to 2026-08)
 1. **Baseline** (20250703) — F26 full schema recreation
 2. **Phase 2-5** (20250704-05) — Multi-tenancy foundation: tenants table, tenant_id on all business tables, backfill, RLS policies, unique indexes
 3. **Phase 7-11** (20250705) — Subscription limits, admin dashboard RPCs, audit triggers
@@ -303,7 +317,7 @@ CREATE POLICY ON system_admins FOR ALL TO authenticated
 | Domain | Function | Auth | Purpose |
 |---|---|---|---|
 | **Tenant lifecycle** | create-tenant | system_admin | Create tenant + admin user + subscription + membership |
-| | delete-tenant | system_admin or tenant_owner | Soft/hard delete tenant with cascade |
+| | delete-tenant | system_admin or tenant_owner | Soft delete (archive) by default; hard delete via `force=true`. Hard delete supports two paths: canonical `delete_tenant_canonical` RPC when `USE_CANONICAL_DELETE=true`, or legacy multi-step cascade. |
 | | tenant-backup | system_admin | Export tenant data to JSON |
 | | tenant-restore | system_admin | Restore tenant from backup JSON |
 | **Auth/Security** | admin-2fa-override | system_admin (caller + approver) | Emergency 2FA disable (dual approval) |
@@ -327,14 +341,17 @@ CREATE POLICY ON system_admins FOR ALL TO authenticated
 | | db-maintenance | system_admin | Vacuum/reindex/bloat/index stats |
 | | cron-admin-tasks | internal secret or service_role | Cron worker: billing_reminders, audit_cleanup |
 | | error-performance | system_admin | Error log summary + query performance metrics |
+| | outbox-processor | service_role (cron or HTTP) | Polls `outbox` for `pending` messages and performs idempotent side effects (storage cleanup, orphaned auth user deletion) for the canonical tenant delete pipeline |
 | **Webhooks** | webhook-delivery | internal secret or service_role | Deliver pending webhooks with retry |
 | **Domains** | check-subdomain | public (rate-limited) | Check subdomain availability |
 | | verify-domain | system_admin or tenant_admin | Custom domain DNS TXT verification |
 | **Audit/Logging** | audit-log | any authenticated user | Centralized audit log + rate limiting service |
 
-### 6.3 verify_jwt Settings (config.toml)
-- `verify_jwt = false`: send-billing-email, send-ticket-email, billing-webhooks, cron-admin-tasks, check-subdomain
-- All others: default (verify_jwt = true)
+### 6.3 verify_jwt Settings (local config.toml vs production deployment)
+- **Local `config.toml` (5 with `verify_jwt = false`)**: send-billing-email, send-ticket-email, billing-webhooks, cron-admin-tasks, check-subdomain
+- **Production deployment (8 with `verify_jwt = false`)**: the above 5 **plus** send-template-email, admin-health-check, webhook-delivery
+- All others: default (`verify_jwt = true`)
+- **Divergence note**: production has 3 more public functions than local `config.toml` declares. When re-syncing, reconcile `config.toml` with the deployed set to avoid accidentally re-enabling JWT on `admin-health-check` (monitoring) or the internal-secret functions.
 
 ---
 
@@ -343,8 +360,8 @@ CREATE POLICY ON system_admins FOR ALL TO authenticated
 ### 7.1 supabaseService.ts (147KB — the god-service)
 ~150+ exported functions covering all tenant-app business operations. Mix of direct CRUD (`supabase.from(...)`) and RPC calls (`supabase.rpc(...)`). Contains `_legacy*` fallbacks for checkout, deleteOrder, createReturnOrder (non-atomic, used if migrations not applied).
 
-### 7.2 Other Root Services (31 files)
-- **tenantService.ts** (33KB) — tenant/membership/subscription/usage management (heavy RPC user)
+### 7.2 Other Root Services (32 files)
+- **tenantService.ts** (33KB) — tenant/membership/subscription/usage management (heavy RPC user). `hardDeleteTenant` now routes to the canonical `delete_tenant_canonical` RPC when `VITE_USE_CANONICAL_DELETE` / `USE_CANONICAL_DELETE` is `true`, otherwise falls back to the legacy `delete-tenant` Edge Function invocation.
 - **systemAdminService.ts** — system admin CRUD, security settings, rate limiting
 - **twoFactorService.ts** — TOTP enrollment/verification, backup codes, 2FA override
 - **invoiceService.ts** — invoice creation, payment confirmation, billing email
@@ -414,7 +431,15 @@ All 27 flags currently `true` (incremental UI rollout flags: useNewAppShell, use
 - **Auth**: signup disabled, anonymous disabled, email confirmation required, MFA TOTP enabled, JWT expiry 1h, refresh token rotation enabled
 - **Storage**: enabled, 50MiB limit, S3 protocol enabled, bucket `tenant-assets`
 - **Realtime**: enabled (admin_events table)
-- **Edge Functions**: 29 deployed, 5 with verify_jwt=false (see §6.3)
+- **Edge Functions**: 29 deployed; local `config.toml` marks 5 as `verify_jwt=false`, but production has 8 (see §6.3)
+- **Feature flag `USE_CANONICAL_DELETE`**: env var gates the canonical delete pipeline. `tenantService.ts` checks `VITE_USE_CANONICAL_DELETE` or `USE_CANONICAL_DELETE`; `supabase/functions/delete-tenant/index.ts` checks `Deno.env.get('USE_CANONICAL_DELETE')`. Default `false` keeps legacy path; set `'true'` to use `delete_tenant_canonical` RPC + `outbox-processor` side effects.
+- **Edge-function deployment-path inconsistency**: 10 of 29 deployed functions have an `entrypoint_path` outside this repo (8 from `C:\Users\SUACAUBA\...\vietsale-pro-v7\...`, 2 from `C:\tmp\user_fn_*`). These should be redeployed from `supabase/functions/` to guarantee source-repo consistency. (e.g. `delete-tenant` v6 was deployed from a `C:\Users\SUACAUBA\...` path.)
+
+### 9.2.1 Staging Backend (Supabase)
+- **project_id**: `shbmzvfcenbybvyzclem` — "QLBH Staging Multi-Tenant"
+- **region**: `ap-northeast-1`; **Postgres**: 17.6.1.141
+- **Created**: 2026-07-04; **Status**: ACTIVE_HEALTHY
+- **Purpose**: multi-tenant staging validation for Wave-02+ changes (schema parity confirmed for audit_log FK, `trg_audit_log_tenants`, `delete_tenant_safe`).
 
 ### 9.3 External Integrations
 - **Resend** (email) — RESEND_API_KEY
@@ -427,17 +452,19 @@ All 27 flags currently `true` (incremental UI rollout flags: useNewAppShell, use
 
 ## 10. Tests & Governance
 
-### 10.1 Tests (67 files)
+### 10.1 Tests (70 files)
 - **Unit/Component** (vitest + jsdom): tests/admin-dashboard/* (16 files), tests/components/, tests/services/
 - **Integration**: tests/integration/ (tenant isolation, system admin creation)
 - **Smoke**: tests/smoke/ (28 files covering P2-P18 features, RBAC, offline, subscription, member management)
 - **Edge function tests**: tests/edge-functions/ (delete-tenant regression, domain-verification, send-sms)
 - **DB tests (pgTAP)**: supabase/tests/admin/ (audit_log, billing, helper functions, RLS policies)
+- **Wave-03 canonical delete tests**: `supabase/tests/rpc/delete_state_tables.test.sql`, `supabase/tests/rpc/delete_tenant_canonical.test.sql`, `supabase/tests/rpc/audit_independence.test.sql`, `supabase/tests/rpc/trigger_migration.test.sql`; `tests/edge-functions/outbox-processor.regression.test.ts`; `tests/regression/delete-tenant-idempotency.test.ts`, `tests/regression/delete-tenant-500.test.ts`
 - **Mocks**: tests/mocks/supabase.ts (325KB comprehensive mock)
 
 ### 10.2 Governance Docs
 - **docs/admin-dashboard/**: RPC_CONTRACTS.md, runbooks (DISASTER_RECOVERY, INCIDENT_RESPONSE, KEY_ROTATION, MIGRATION, MONITORING, ROLLBACK), deployment/remediation plans
-- **Root**: 80+ governance MD files (PRODUCTION_DEPLOYMENT_PROGRAM_CHARTER, RELEASE_CERTIFICATION, BUSINESS_ACCEPTANCE_RECORD, etc.) — extensive production deployment program documentation
+- **Root**: 110 governance MD files (PRODUCTION_DEPLOYMENT_PROGRAM_CHARTER, RELEASE_CERTIFICATION, BUSINESS_ACCEPTANCE_RECORD, etc.) — extensive production deployment program documentation
+- **`ADMIN_DASHBOARD_PLAN_FIX_SPB/`** (135+ MD files): admin dashboard investigation, execution model, dependency maps, forensic protocols, inconsistency reports, and the Wave-01/Wave-02 governance program (conditions A–F, SPEC-001..007, ratification/decision records, `WAVE-02_RECONCILIATION_REPORT.md`)
 
 ### 10.3 Build/Verify Commands
 - `npm run dev` — Vite dev server
@@ -468,6 +495,11 @@ All 27 flags currently `true` (incremental UI rollout flags: useNewAppShell, use
 - Cypher `labels(n)` and `keys(n)` returned aggregate counts rather than per-label breakdowns (MCP quirk); label distribution inferred from `search_graph` with label filter + file_pattern.
 - Route nodes include noise from `archive/experiments/frappe-docker` (17 Route nodes, most irrelevant).
 
+### Validation Cross-Reference (O-A-10)
+- This memory was independently validated: `.codebase-memory/VALIDATION_REPORT.md` (2026-07-23, commit `ec0f317b`) — conclusion **VALIDATED WITH OBSERVATIONS**. Architecture and business logic verified; §10 listed 10 quantitative/coverage gaps.
+- Those 10 gaps were dispositioned as O-A-01..O-A-10 in `ADMIN_DASHBOARD_PLAN_FIX_SPB/WAVE-02_CONDITION_A_CLOSE_OBSERVATIONS.md` and applied to this document on 2026-07-24 (RPC count, e-invoice domain, phantom-table removal, category counts, staging project, verify_jwt divergence, deployment-path note, quantitative counts, governance references).
+- Wave-02 reconciliation of the deployed delete/audit state is recorded in `ADMIN_DASHBOARD_PLAN_FIX_SPB/WAVE-02_RECONCILIATION_REPORT.md` — the `delete-tenant` HTTP 500 root cause is fixed in production/staging via `20260715000011_fix_audit_log_trigger_tenant_delete.sql`.
+
 ---
 
 ## 12. How to Use This Memory
@@ -477,5 +509,13 @@ Future sessions can query the codebase-memory MCP graph directly:
 - **Find callers of an RPC**: `trace_path(function_name="create_order", mode="calls", direction="inbound")`
 - **Cross-service trace**: `trace_path(mode="cross_service")` for edge→DB flows
 - **Cypher queries**: `query_graph(query="MATCH (f:Function) WHERE f.file_path STARTS WITH 'services/' RETURN ...")`
+
+### 12.1 Debugging canonical tenant delete
+When a delete request fails or hangs, inspect in this order:
+1. **`delete_state`** by `request_id` or `tenant_id` — shows the state machine (`DELETE_REQUESTED` → `VALIDATING` → `PREPARING` → `EXECUTING` → `SIDE_EFFECTS_PENDING` → `COMPLETED`/`FAILED`/`ROLLBACK`).
+2. **`outbox`** by `request_id` — confirms `storage.cleanup` and `auth.cleanup` messages were enqueued and their status (`pending`, `processing`, `processed`, `failed`).
+3. **`tenant_deletion_backups`** by `request_id` — contains the JSON snapshot of the tenant row + user ids before hard-delete; used for manual rollback/recovery.
+4. **Edge Function `outbox-processor` logs** — if messages are stuck in `pending`/`failed`, the processor may not be running or the storage/auth cleanup is failing.
+5. **`app_audit_log` with `deleted_tenant_id`** — audit intent record survives tenant deletion after the FK is dropped and `deleted_tenant_id` is populated.
 
 This SEMANTIC_MEMORY.md provides the business intent, module responsibilities, and cross-module relationships that the graph alone (which is structural) doesn't capture. Use both together.
