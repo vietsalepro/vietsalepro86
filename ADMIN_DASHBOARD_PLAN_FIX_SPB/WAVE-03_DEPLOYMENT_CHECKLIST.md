@@ -27,9 +27,9 @@
 
 | # | Bước | Trạng thái | Bằng chứng |
 |---|------|------------|------------|
-| 1 | `git add -A` | ☐ | `git status --short` |
-| 2 | `git commit -m "deploy(wave-03): ..."` | ☐ | Commit hash |
-| 3 | `git push origin master` | ☐ | `git log` remote |
+| 1 | `git add -A` | ☑ | `git status --short` |
+| 2 | `git commit -m "deploy(wave-03): ..."` | ☑ | `9878496c` |
+| 3 | `git push origin master` | ☑ | `origin/master` đã nhận `9878496c` |
 
 ---
 

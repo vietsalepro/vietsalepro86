@@ -121,7 +121,7 @@
 
 | STT | Công việc | Người thực hiện | Trạng thái | Ghi chú |
 |-----|-----------|-----------------|------------|---------|
-| 7.1 | Commit code Wave-03 lên repository | Agent | ⏳ CHỜ | Commit + push migrations, Edge Functions, service, tests, scripts |
+| 7.1 | Commit code Wave-03 lên repository | Agent | ✅ HOÀN THÀNH | Commit + push thành công. Commit hash: `9878496c` |
 | 7.2 | Deploy migrations lên Staging | Agent | ⏳ CHỜ | `supabase migration up --linked` (project: `shbmzvfcenbybvyzclem`) |
 | 7.3 | Deploy Edge Functions lên Staging | Agent | ⏳ CHỜ | Deploy `outbox-processor`, `delete-tenant` |
 | 7.4 | Chạy verification trên Staging | Agent | ⏳ CHỜ | `npx tsx scripts/verify-wave03.ts` + tests |
